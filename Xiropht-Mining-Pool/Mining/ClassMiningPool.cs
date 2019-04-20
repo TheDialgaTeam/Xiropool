@@ -584,7 +584,10 @@ namespace Xiropht_Mining_Pool.Mining
                                     }
                                     else
                                     {
-                                        listShare[CurrentMiningJob] = totalShareDone;
+                                        if (listShare[CurrentMiningJob] < totalJobDone)
+                                        {
+                                            listShare[CurrentMiningJob] = totalShareDone;
+                                        }
                                     }
                                     float tmpHashrate = 0;
                                     foreach (var hashrate in listShare)
@@ -607,7 +610,10 @@ namespace Xiropht_Mining_Pool.Mining
                                     }
                                     if (listShare.ContainsKey(CurrentMiningJob))
                                     {
-                                        listShare[CurrentMiningJob] = totalShareDone;
+                                        if (listShare[CurrentMiningJob] < totalJobDone)
+                                        {
+                                            listShare[CurrentMiningJob] = totalShareDone;
+                                        }
                                     }
                                     else
                                     {
