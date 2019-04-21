@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>Xiropht | Mining Pool Blocks Mined</title>
+	<meta name="description" content="Mining pool blocks mined page." />
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1"">
+	<link rel="apple-touch-icon" sizes="57x57" href="https://cdn.xiropht.com/images/icons/apple-icon-57x57.png">
+	<link rel="apple-touch-icon" sizes="60x60" href="https://cdn.xiropht.com/images/icons/apple-icon-60x60.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="https://cdn.xiropht.com/images/icons/apple-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="76x76" href="https://cdn.xiropht.com/images/icons/apple-icon-76x76.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="https://cdn.xiropht.com/images/icons/apple-icon-114x114.png">
+	<link rel="apple-touch-icon" sizes="120x120" href="https://cdn.xiropht.com/images/icons/apple-icon-120x120.png">
+	<link rel="apple-touch-icon" sizes="144x144" href="https://cdn.xiropht.com/images/icons/apple-icon-144x144.png">
+	<link rel="apple-touch-icon" sizes="152x152" href="https://cdn.xiropht.com/images/icons/apple-icon-152x152.png">
+	<link rel="apple-touch-icon" sizes="180x180" href="https://cdn.xiropht.com/images/icons/apple-icon-180x180.png">
+	<link rel="icon" type="image/png" sizes="192x192"  href="https://cdn.xiropht.com/images/icons/android-icon-192x192.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="https://cdn.xiropht.com/images/icons/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="96x96" href="https://cdn.xiropht.com/images/icons/favicon-96x96.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="https://cdn.xiropht.com/images/icons/favicon-16x16.png">
+	<meta name="msapplication-TileImage" content="/images/icons/ms-icon-144x144.png">
+	<link rel="canonical" href="https://pool.xiropht.com/blocks.html" />
+	<script src="config.js"></script>
+	<script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-137379520-2" async></script>
+
+<script>
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+  	window.dataLayer = window.dataLayer || [];
+  	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'UA-137379520-2');
+</script>
+<style>
+	@import url(/css/main_pool.css);
+	@import url(/css/bootstrap.min.css);
+	@import url(custom.css);
+	@import url(/css/font-awesome.min.css);
+</style>
+</head>
+<body>
+
+
+	<nav class="navbar navbar-inverse navbar-static-top example6">
+    		<div class="container">
+        		<div class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar6">
+                			<span class="sr-only">Toggle navigation</span>
+                			<span class="icon-bar"></span>
+                			<span class="icon-bar"></span>
+                			<span class="icon-bar"></span>
+            			</button>
+            			<a class="navbar-brand"></a>
+        		</div>
+			<div id="navbar6" class="navbar-collapse collapse">
+				<ul class="nav navbar-nav navbar-right">
+                			<li><a class="hot_link" href="index.html">
+                    				<i class="fa fa-home"></i> Home
+					</a></li>
+                			<li><a class="hot_link" href="gettingstarted.html">
+                    				<i class="fa fa-rocket"></i> Getting Started
+                			</a></li>
+
+                			<li class="active"><a class="hot_link" href="blocks.html">
+                    				<i class="fa fa-cubes"></i> Pool Blocks
+					</a></li>
+
+					<li><a class="hot_link" href="payments.html">
+						<i class="fa fa-paper-plane-o"></i> Payments
+					</a></li>
+					<li><a href="https://xiropht.com/" title="official website">Official Website</a></li>
+					<li><a target="_blank" href="https://discord.gg/cmRN2xD" title="Discord">Discord</a></li>
+					<li><a target="_blank" href="https://t.me/XIROPHTCOIN" title="Telegram" rel="nofollow">Telegram</a></li>
+            			</ul>
+        		</div>
+    		</div>
+	</nav>
+
+	<div class="paymentsStatHolder">
+		<span class="bg-primary">Total Blocks Mined: <span id="blocksMinedTotal"></span></span>
+	</div>
+
+	<div class="center-block">
+		<div id="PoolPayments" class="row center-block">
+			<div class="col-md-12 stats">
+				<h1>Blocks mined:</h1>
+				<div class="table-responsive">
+					<table class="table table-bordered" id="blockTable">
+						<thead>
+							<tr>
+								<th>Block Height</th>
+								<th><i class="fa fa-clock-o"></i> Time Created</th>
+								<th><i class="fa fa-clock-o"></i> Time Found</th>
+								<th><i class="fa fa-paw"></i> Block Hash</th>
+								<th><i class="fa fa-paw"></i> Transaction Hash</th>
+								<th>Block Difficulty</th>
+								<th><i class="fa fa-money"></i> Reward</th>
+							</tr>
+						</thead>
+						<tbody id="blocks_rows">
+            					</tbody>
+        				</table>
+				</div>
+				<p class="text-center">
+					<button type="button" class="btn btn-default" id="loadMoreBlocks">Load More</button>
+				</p>
+			</div>
+		</div>
+	</div>
+
+	<footer class="navbar-default navbar-static-bottom">
+		<div class="container-fluid">
+			<p class="text-center"> 2019 &copy; <a href="https://xiropht.com/">Xiropht.com</a></p>
+			<p class="text-center">Design inspired of <a href="https://github.com/fancoder/cryptonote-universal-pool/tree/master/website" target="_blank" rel="external, nofollow">Cryptonote-Universal-Pool</a> repository.</p>
+		</div>
+	</footer>
+
+</body>
+
+<script>
+
+	function loadScripts(urls, length, success)
+	{
+    		if(length > 0)
+		{
+        		script = document.createElement("SCRIPT");
+        		script.src = urls[length-1];
+        		script.onload = function()
+			{
+				loadScripts(urls, length-1, success);               
+			};
+			document.getElementsByTagName("head")[0].appendChild(script);
+    		}
+    		else
+        		if(success)
+            			success();
+	}
+	var totalBlock = 0;
+	var pageBlock = 1;
+	var maxBlock = 10;
+	var block = [];
+	var inUpdating = false;
+
+	function GetPoolStats()
+	{
+		if (!inUpdating)
+		{
+			inUpdating = true;
+			var xmlHttp = new XMLHttpRequest();
+			xmlHttp.onreadystatechange = function()
+			{ 
+				if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+				{
+					var data = JSON.parse(xmlHttp.responseText);
+					document.getElementById("blocksMinedTotal").innerHTML = data.pool_total_block_found;
+					if (totalBlock == 0)
+					{
+						totalBlock = data.pool_total_block_found;
+						if (block.length == 0)
+						{
+							var totalRound = 0;
+							for(var i = totalBlock; i > 0; i--)
+							{
+								if (totalRound < maxBlock)
+								{
+									totalRound++;
+									waitBlock(i);
+								}
+							}
+						}
+					}
+					else
+					{
+						if (totalBlock < data.pool_total_block_found)
+						{
+							for (var i = totalBlock; i <= data.pool_total_block_found; i++)
+							{
+								waitNewBlock(i);
+							}
+						}
+						totalBlock = data.pool_total_block_found;
+					}
+
+				}
+				inUpdating = false;
+			}
+			xmlHttp.open("GET", apiHost + "get_pool_stats", true); // async
+			xmlHttp.send();
+		}
+	}
+
+	async function waitBlock(blockId)
+	{
+		return await new Promise(r => GetCoinBlockPerId(blockId));
+	}
+
+	async function waitNewBlock(blockId)
+	{
+		return await new Promise(r => GetCoinNewBlockPerId(blockId));
+	}
+
+
+	function AskMoreBlock()
+	{
+		if (block.length < (maxBlock * pageBlock))
+		{
+			if ((maxBlock * pageBlock) <= totalBlock)
+			{
+				var start = totalBlock - (maxBlock * (pageBlock-1));
+				var difference = totalBlock - (maxBlock * pageBlock);
+				for(var i = start ; i > difference; i--)
+				{
+					if (i > 0)
+					{
+						GetCoinBlockPerId(i);
+					}
+				}
+			}
+			else
+			{
+				var start = totalBlock - block.length;
+				if (start > 0)
+				{
+					for(var i = start; i > 0; i--)
+					{
+						if (i > 0)
+						{
+							GetCoinBlockPerId(i);
+						}
+					}
+				}
+				else
+				{
+					pageBlock--;
+				}
+			}
+		}
+		else
+		{
+			pageBlock--;
+		}
+	}
+
+
+	async function GetCoinBlockPerId(blockId)
+	{
+		var xmlHttp = new XMLHttpRequest();
+		xmlHttp.timeout = 1000;
+		xmlHttp.onreadystatechange = function(e)
+		{ 
+			if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+			{
+				var data = JSON.parse(xmlHttp.responseText);
+				if (block.indexOf(data.block_id) == -1)
+				{
+					block.push(data.block_id);
+					var rowBlock = document.createElement('tr');
+					rowBlock.setAttribute('data-json', data);
+
+					var rowBlockContent = '<td>' + data.block_id + '</td>' +
+						'<td>' + formatDate(data.block_timestamp_create) + '</td>' +
+						'<td>' + formatDate(data.block_timestamp_found) + '</td>' +
+					 	'<td><a href=\"' + blockExplorer + data.block_hash + '\" target=\"_blank\">' + data.block_hash + '</a></td>' +
+					 	'<td><a href=\"' + transactionExplorer + data.block_transaction_hash + '\" target=\"_blank\">' + data.block_transaction_hash + '</a></td>' +
+					 	'<td>' + data.block_difficulty + '</td>' +
+						'<td>' + data.block_reward + ' ' + coinMinName + '</td>';
+
+					rowBlock.innerHTML = rowBlockContent;
+					var blockList = $('#blocks_rows');
+					blockList.append(rowBlock);
+					previousSorting = "asc";
+					sortTable(2);
+				}
+			}
+		}
+		xmlHttp.open("GET", apiHost + "get_pool_block_by_id|" + blockId, true); // async
+		xmlHttp.send();
+	}
+
+	async function GetCoinNewBlockPerId(blockId)
+	{
+		var xmlHttp = new XMLHttpRequest();
+		xmlHttp.onreadystatechange = function()
+		{ 
+			if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+			{
+				var data = JSON.parse(xmlHttp.responseText);
+				if (block.indexOf(data.block_id) == -1)
+				{
+					block.push(data.block_id);
+					var rowBlock = document.createElement('tr');
+					rowBlock.setAttribute('data-json', data);
+
+					var rowBlockContent = '<td>' + data.block_id + '</td>' +
+						'<td>' + formatDate(data.block_timestamp_create) + '</td>' +
+						'<td>' + formatDate(data.block_timestamp_found) + '</td>' +
+					 	'<td><a href=\"https://xiropht.com/blockchain-explorer.html#' + data.block_hash + '\" target=\"_blank\">' + data.block_hash + '</a></td>' +
+					 	'<td><a href=\"https://xiropht.com/transaction-explorer.html#' + data.block_transaction_hash + '\" target=\"_blank\">' + data.block_transaction_hash + '</a></td>' +
+					 	'<td>' + data.block_difficulty + '</td>' +
+						'<td>' + data.block_reward + ' ' + coinMinName + '</td>';
+
+					var blockList = document.getElementById("blocks_rows");
+					var rowInsert = blockList.insertRow(0);
+					rowInsert.innerHTML = rowBlockContent;
+					rowInsert.appendChild(rowBlock);
+					previousSorting = "asc";
+					sortTable(2);
+				}
+			}
+		}
+		xmlHttp.open("GET", apiHost + "get_pool_block_by_id|" + blockId, true); // async
+		xmlHttp.send();
+	}
+
+
+	function formatDateTime(input){
+		var t = new Date(1970,0,1);
+		t.setSeconds(input);
+		var s = t.toTimeString().substr(0,8);
+		if(input > 86399)
+		{
+			s = Math.floor((t - Date.parse("1/1/70")) / 3600000) + s.substr(2);
+		}
+		return s;
+	};
+
+	function formatDate(time){
+		if (!time) return '';
+		return new Date(parseInt(time) * 1000).toLocaleString();
+	}
+
+	var oldSortingTable = 0;
+
+	var previousSorting = "desc";
+
+	function sortTable(n) {
+		oldSortingTable = n;
+		var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+		table = document.getElementById("blockTable");
+		switching = true;
+		if (previousSorting == "asc")
+		{
+			dir = "desc"; 
+			previousSorting = "desc";
+		}
+		else
+		{
+			dir = "asc";
+			previousSorting = "asc";
+		}
+	
+		while (switching) {
+			switching = false;
+			rows = table.rows;
+		
+			for (i = 1; i < (rows.length - 1); i++) {
+			shouldSwitch = false;
+		
+			x = rows[i].getElementsByTagName("TD")[n];
+			y = rows[i + 1].getElementsByTagName("TD")[n];
+		
+			if (dir == "asc") {
+				if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+				shouldSwitch = true;
+				break;
+				}
+			} else if (dir == "desc") {
+				if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+				shouldSwitch = true;
+				break;
+				}
+			}
+			}
+			if (shouldSwitch) {
+			rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+			switching = true;
+			switchcount ++; 
+			} else {
+			if (switchcount == 0 && dir == "asc") {
+				dir = "desc";
+				switching = true;
+			}
+			}
+		}
+	}
+
+	urls = ['/js/jquery.min.js', '/js/bootstrap.min.js','/js/jquery-3.3.1.min.js'];
+
+	loadScripts(urls, urls.length, function()
+	{
+		GetPoolStats();
+		setInterval(GetPoolStats, 5000);
+		$("#loadMoreBlocks").click(function()
+		{
+			pageBlock++;
+			AskMoreBlock();
+		});
+
+		WebFontConfig = 
+		{
+			google: { families: [ 'Inconsolata' ] }
+		};
+		(
+			function() 
+			{
+				var wf = document.createElement('script');
+				wf.src = ('https:' == document.location.protocol ? 'https' : 'http') + '://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js';
+				wf.type = 'text/javascript';
+    				wf.async = 'true';
+				var s = document.getElementsByTagName('script')[0];
+				s.parentNode.insertBefore(wf, s);
+			}
+		)();
+
+	});
+
+</script>
+</html>

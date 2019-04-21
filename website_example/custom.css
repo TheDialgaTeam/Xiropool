@@ -1,0 +1,138 @@
+html {
+	position: relative;
+	min-height: 100%;
+}
+body {
+	margin-bottom: 60px;
+}
+.paymentsStatHolder > span{
+	display: inline-block;
+	border-radius: 5px;
+	padding: 1px 9px;
+	border: 1px solid #e5e5e5;
+	margin: 2px;
+}
+.paymentsStatHolder > span > span{
+	font-weight: bold;
+}
+#payments_rows > tr > td{
+	vertical-align: middle;
+	font-family: 'Inconsolata', monospace;
+	font-size: 0.95em;
+	text-align: center;
+}
+#coinName{
+	text-transform: capitalize;
+}
+.container{
+	font-size: 1.2em;
+}
+#loading{
+	font-size: 2em;
+}
+.stats {
+	margin-bottom: 10px;
+	margin-top: 5px;
+}
+.stats > h3 > i{
+	font-size: 0.80em;
+	width: 21px;
+}
+.stats > div{
+	padding: 5px 0;
+}
+.stats > div > .fa {
+	width: 25px;
+}
+.stats > div > span:first-of-type{
+	font-weight: bold;
+}
+#stats_updated{
+	opacity: 0;
+	float: right;
+	margin-left: 30px;
+	color: #e8e8e8;
+	line-height: 47px;
+	font-size: 0.9em;
+}
+footer{
+	position: absolute;
+	bottom: 0;
+	width: 100%;
+	height: 60px;
+	background-color: #f5f5f5;
+}
+.marketFooter{
+	font-size: 10px;
+	opacity: 0.6;
+}
+#networkLastReward{
+	text-transform: uppercase;
+}
+#lastHash{
+	font-family: 'Inconsolata', monospace;
+	font-size: 0.8em;
+}
+#poolDonations{
+	font-size: 0.75em;
+}
+#miningProfitCalc{
+	margin: 35px 0;
+}
+#calcHashDropdown{
+	border-radius: 0;
+	border-left: 0;
+	border-right: 0;
+}
+#calcHashHolder{
+	width: 590px;
+	max-width: 100%;
+}
+#calcHashRate{
+	z-index: inherit;
+	font-family: 'Inconsolata', monospace;
+}
+#calcHashAmount{
+	font-family: 'Inconsolata', monospace;
+}
+#calcHashResultsHolder{
+	min-width: 145px;
+	max-width: 145px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+#yourStatsInput{
+	z-index: inherit;
+	font-family: 'Inconsolata', monospace;
+}
+#yourAddressDisplay > span {
+	font-family: 'Inconsolata', monospace;
+}
+#lookUp > span:nth-child(2){
+	display: none;
+}
+.yourStats{
+	display: none;
+}
+#yourAddressDisplay{
+	display: inline-block;
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	vertical-align: middle;
+	font-family: 'Inconsolata', monospace;
+	font-size: 0.9em;
+}
+#addressError{
+	color: red;
+}
+#payments_rows > tr > td{
+	vertical-align: middle;
+	font-family: 'Inconsolata', monospace;
+	font-size: 0.95em;
+	text-align: center;
+}
+#payments_rows > tr > td:nth-child(2){
+	text-align: left;
+}

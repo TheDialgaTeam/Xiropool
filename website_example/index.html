@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>Xiropht | Official Mining Pool</title>
+	<meta name="description" content="Official mining pool of xiropht." />
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1"">
+	<link rel="apple-touch-icon" sizes="57x57" href="https://cdn.xiropht.com/images/icons/apple-icon-57x57.png">
+	<link rel="apple-touch-icon" sizes="60x60" href="https://cdn.xiropht.com/images/icons/apple-icon-60x60.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="https://cdn.xiropht.com/images/icons/apple-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="76x76" href="https://cdn.xiropht.com/images/icons/apple-icon-76x76.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="https://cdn.xiropht.com/images/icons/apple-icon-114x114.png">
+	<link rel="apple-touch-icon" sizes="120x120" href="https://cdn.xiropht.com/images/icons/apple-icon-120x120.png">
+	<link rel="apple-touch-icon" sizes="144x144" href="https://cdn.xiropht.com/images/icons/apple-icon-144x144.png">
+	<link rel="apple-touch-icon" sizes="152x152" href="https://cdn.xiropht.com/images/icons/apple-icon-152x152.png">
+	<link rel="apple-touch-icon" sizes="180x180" href="https://cdn.xiropht.com/images/icons/apple-icon-180x180.png">
+	<link rel="icon" type="image/png" sizes="192x192"  href="https://cdn.xiropht.com/images/icons/android-icon-192x192.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="https://cdn.xiropht.com/images/icons/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="96x96" href="https://cdn.xiropht.com/images/icons/favicon-96x96.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="https://cdn.xiropht.com/images/icons/favicon-16x16.png">
+	<meta name="msapplication-TileImage" content="/images/icons/ms-icon-144x144.png">
+	<link rel="canonical" href="https://pool.xiropht.com/index.html" />
+	<script src="config.js"></script>
+	<script type="text/javascript" src="https://www.googletagmanager.com/gtag/js?id=UA-137379520-2" async></script>
+
+<script>
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+  	window.dataLayer = window.dataLayer || [];
+  	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+	gtag('config', 'UA-137379520-2');
+</script>
+<style>
+	@import url(/css/main_pool.css);
+	@import url(/css/bootstrap.min.css);
+	@import url(custom.css);
+	@import url(/css/font-awesome.min.css);
+</style>
+</head>
+<body>
+
+
+	<nav class="navbar navbar-inverse navbar-static-top example6">
+    		<div class="container">
+        		<div class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar6">
+                			<span class="sr-only">Toggle navigation</span>
+                			<span class="icon-bar"></span>
+                			<span class="icon-bar"></span>
+                			<span class="icon-bar"></span>
+            			</button>
+            			<a class="navbar-brand"></a>
+        		</div>
+			<div id="navbar6" class="navbar-collapse collapse">
+				<ul class="nav navbar-nav navbar-right">
+                			<li class="active"><a class="hot_link" href="index.html">
+                    				<i class="fa fa-home"></i> Home
+					</a></li>
+                			<li><a class="hot_link" href="gettingstarted.html">
+                    				<i class="fa fa-rocket"></i> Getting Started
+                			</a></li>
+
+                			<li><a class="hot_link" href="blocks.html">
+                    				<i class="fa fa-cubes"></i> Pool Blocks
+					</a></li>
+
+					<li><a class="hot_link" href="payments.html">
+						<i class="fa fa-paper-plane-o"></i> Payments
+					</a></li>
+					<li><a href="https://xiropht.com/" title="official website">Official Website</a></li>
+					<li><a target="_blank" href="https://discord.gg/cmRN2xD" title="Discord">Discord</a></li>
+					<li><a target="_blank" href="https://t.me/XIROPHTCOIN" title="Telegram" rel="nofollow">Telegram</a></li>
+            			</ul>
+        		</div>
+    		</div>
+	</nav>
+
+	<div class="row">
+		<div class="col-xs-12 col-md-5 text-center stats">
+			<h3>Network</h3>
+			<div><i class="fa fa-bars"></i> Block Height: <span id="BlockHeight"></span></div>
+			<div><i class="fa fa-tachometer"></i> Network Hashrate: <span id="NetworkHashrate"></span></div>
+			<div><i class="fa fa-unlock-alt"></i> Network Difficulty: <span id="NetworkDifficulty"></span></div>
+			<div><i class="fa fa-clock-o"></i> Last Block Found: <span id="NetworkLastBlockFoundDate"></span></div>
+			<div><i class="fa fa-paw"></i> Last Block Found Hash: <span id="NetworkLastBlockFoundHash"></span></div>
+			<div><i class="fa fa-money"></i> Block Reward: Fixed to 10.00000000 XIR</div>
+		</div>
+		<div class="col-xs-12 col-md-5 text-center stats">
+			<h3>Pool</h3>
+			<div><i class="fa fa-tachometer"></i> Pool Hashrate: <span id="PoolHashrate"></span></div>
+			<div><i class="fa fa-users"></i> Total Connected Workers: <span id="TotalConnectedWorkers"></span></div>
+			<div><i class="fa fa-users"></i> Total Connected Miners: <span id="TotalConnectedMiners"></span></div>
+			<div><i class="fa fa-clock-o"></i> Last Block Found: <span id="PoolLastBlockFound"></span></div>
+			<div><i class="fa fa-money"></i> Pool Fee: <span id="PoolFee"></span></div>
+			<div><i class="fa fa-tachometer"></i> Blocks found every: <span id="PoolFoundBlockTime"></span></div>
+			<div>Total Payout(s) Done: <span id="PoolTotalPayoutDone"></span></div>
+			<div>Total Block(s) Found: <span id="PoolTotalBlockFound"></span></div>
+		</div>
+
+	</div>
+
+	<div class="stats center-block">
+		<h3 class="center-block">Your Stats & Payment History</h3>
+		<div><p id="errorWalletAddress"class="text-danger text-center">Input Wallet Address: <span id="WalletAddressNotExist"></span> not exist</p></div>
+		<div class="input-group">
+			<input class="form-control" id="yourStatsInput" type="text" placeholder="Enter Your Address">
+			<span class="input-group-btn">
+				<button class="btn btn-default" type="button" id="lookUp">
+					<span><i class="fa fa-search"></i> Lookup</span>
+  					<span><i class="fa fa-refresh fa-spin"></i> Searching...</span>
+				</button>
+			</span>
+		</div>
+		<div class="row center-block" id="MinerStats">
+			<div class="col-sm-4 stats">
+				<div><i class="fa fa-bank"></i> Pending Balance: <span id="totalPendingBalance"></span></div>
+            			<div><i class="fa fa-money"></i> Total Paid: <span id="totalPaid"></span></div>
+            			<div><i class="fa fa-tachometer"></i> Hash Rate: <span id="totalHashrate"></span></div>
+            			<div><i class="fa fa-cloud-upload"></i> Total Good Share Submitted: <span id="totalGoodShare"></span></div>
+				<div>Total Payment(s): <span id="totalPayment"></span></div>
+        		</div>
+		</div>
+
+		<div id="MinerPayments" class="row center-block">
+			<div class="col-md-12 stats">
+				<h4>Payments</h4>
+				<div class="table-responsive">
+					<table class="table table-bordered" id="transactionTable">
+						<thead>
+							<tr>
+								<th>Id</th>
+								<th><i class="fa fa-clock-o"></i> Date Sent</th>
+								<th><i class="fa fa-paw"></i> Transaction Hash</th>
+								<th><i class="fa fa-money"></i> Amount</th>
+								<th><i class="fa fa-money"></i> Fee</th>
+							</tr>
+						</thead>
+						<tbody id="payments_rows">
+            					</tbody>
+        				</table>
+				</div>
+				<p class="text-center">
+					<button type="button" class="btn btn-default" id="loadMorePayments">Load More</button>
+				</p>
+			</div>
+		</div>
+	</div>
+
+	<footer class="navbar-default navbar-static-bottom">
+		<div class="container-fluid">
+			<p class="text-center"> 2019 &copy; <a href="https://xiropht.com/">Xiropht.com</a></p>
+			<p class="text-center">Design inspired of <a href="https://github.com/fancoder/cryptonote-universal-pool/tree/master/website" target="_blank" rel="external, nofollow">Cryptonote-Universal-Pool</a> repository.</p>
+		</div>
+	</footer>
+
+</body>
+
+<script>
+
+	var docCookies = {
+		getItem: function (sKey) {
+			return decodeURIComponent(document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + encodeURIComponent(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1")) || null;
+		},
+		setItem: function (sKey, sValue, vEnd, sPath, sDomain, bSecure) {
+			if (!sKey || /^(?:expires|max\-age|path|domain|secure)$/i.test(sKey)) { return false; }
+			var sExpires = "";
+			if (vEnd) {
+				switch (vEnd.constructor) {
+					case Number:
+						sExpires = vEnd === Infinity ? "; expires=Fri, 31 Dec 9999 23:59:59 GMT" : "; max-age=" + vEnd;
+						break;
+					case String:
+						sExpires = "; expires=" + vEnd;
+						break;
+					case Date:
+						sExpires = "; expires=" + vEnd.toUTCString();
+						break;
+				}
+			}
+			document.cookie = encodeURIComponent(sKey) + "=" + encodeURIComponent(sValue) + sExpires + (sDomain ? "; domain=" + sDomain : "") + (sPath ? "; path=" + sPath : "") + (bSecure ? "; secure" : "");
+			return true;
+		},
+		removeItem: function (sKey, sPath, sDomain) {
+			if (!sKey || !this.hasItem(sKey)) { return false; }
+			document.cookie = encodeURIComponent(sKey) + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT" + ( sDomain ? "; domain=" + sDomain : "") + ( sPath ? "; path=" + sPath : "");
+			return true;
+		},
+		hasItem: function (sKey) {
+			return (new RegExp("(?:^|;\\s*)" + encodeURIComponent(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=")).test(document.cookie);
+		}
+	};
+
+	function loadScripts(urls, length, success)
+	{
+    		if(length > 0)
+		{
+        		script = document.createElement("SCRIPT");
+        		script.src = urls[length-1];
+        		script.onload = function()
+			{
+				loadScripts(urls, length-1, success);               
+			};
+			document.getElementsByTagName("head")[0].appendChild(script);
+    		}
+    		else
+        		if(success)
+            			success();
+	}
+	var currentWalletAddress = "";
+	var walletStatsAutoUpdate = false;
+	var walletStatsAutoUpdateObject;
+	var totalTransaction = 0;
+	var pageTransaction = 1;
+	var maxTransaction = 10;
+	var transaction = [];
+	var inUpdating = false;
+
+	function GetPoolStats()
+	{
+		var xmlHttp = new XMLHttpRequest();
+		xmlHttp.onreadystatechange = function()
+		{ 
+			if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+			{
+				var data = JSON.parse(xmlHttp.responseText);
+				document.getElementById("BlockHeight").innerHTML = data.network_height;
+				document.getElementById("NetworkDifficulty").innerHTML = data.network_difficulty;
+				document.getElementById("NetworkHashrate").innerHTML = formatHashrate(data.network_hashrate);
+				document.getElementById("PoolHashrate").innerHTML = formatHashrate(data.pool_hashrate);
+				document.getElementById("TotalConnectedWorkers").innerHTML = data.pool_total_worker_connected;
+				document.getElementById("TotalConnectedMiners").innerHTML = data.pool_total_miner_connected;
+				if (data.pool_hashrate <= 0)
+				{
+					document.getElementById("PoolFoundBlockTime").innerHTML = "Infinity";
+				}
+				else
+				{
+					var difference = data.network_difficulty / data.network_hashrate;
+					var seconds = (GetAmountOfCalculationPossibility(data.network_difficulty)  / GetAmountOfCalculationPossibility(data.pool_hashrate)) * (60 * (24/difference));
+					if (seconds >= 1)
+					{
+						document.getElementById("PoolFoundBlockTime").innerHTML = GetTimeAgo(seconds) + " (est)";
+					}
+					else
+					{
+						document.getElementById("PoolFoundBlockTime").innerHTML = "< 1 Second (est)";
+					}
+				}
+				var currentDate = Math.floor(Date.now() / 1000);
+				if (data.pool_last_block_found_date <= 0)
+				{
+					document.getElementById("PoolLastBlockFound").innerHTML = "Never";
+				}
+				else
+				{
+					var timeago = currentDate - data.pool_last_block_found_date;
+					document.getElementById("PoolLastBlockFound").innerHTML = GetTimeAgo(timeago) + " ago.";
+				}
+				document.getElementById("PoolFee").innerHTML = data.pool_fee + "%";
+				document.getElementById("PoolTotalPayoutDone").innerHTML = data.pool_total_payment;
+				document.getElementById("PoolTotalBlockFound").innerHTML = data.pool_total_block_found;
+
+				if (data.network_last_block_found_timestamp <= 0)
+				{
+					document.getElementById("NetworkLastBlockFoundDate").innerHTML = "Never";
+				}
+				else
+				{
+					var timeago = currentDate - data.network_last_block_found_timestamp;
+					document.getElementById("NetworkLastBlockFoundDate").innerHTML = formatDate(data.network_last_block_found_timestamp);
+				}
+				document.getElementById("NetworkLastBlockFoundHash").innerHTML = "<a href='" + blockExplorer + data.network_last_block_hash + "' target='_blank'>" + data.network_last_block_hash.substr(0,16) +"..</a>";
+			}
+		}
+		xmlHttp.open("GET", apiHost + "get_pool_stats", true); // async
+		xmlHttp.send();
+	}
+
+	function GetAmountOfCalculationPossibility(networkDifficulty)
+	{
+		var mathOperator = 5; // Always { + / * % - }.
+		var minRange = 2; // Always.
+		var maxRange = networkDifficulty;
+		var totalPossibility = (maxRange / minRange) * mathOperator; // Estimation.
+		return totalPossibility;
+	}
+
+	function GetWalletStats(walletAddress)
+	{
+		var xmlHttp = new XMLHttpRequest();
+		xmlHttp.onreadystatechange = function()
+		{ 
+			if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+			{
+				var data = JSON.parse(xmlHttp.responseText);
+				if (data.result == null)
+				{
+					document.getElementById("totalHashrate").innerHTML = formatHashrate(data.wallet_total_hashrate);
+					document.getElementById("totalGoodShare").innerHTML = data.wallet_total_good_share;
+					document.getElementById("totalPendingBalance").innerHTML = data.wallet_total_balance + " " + coinMinName;
+					document.getElementById("totalPaid").innerHTML = data.wallet_total_paid + " " + coinMinName;
+					document.getElementById("MinerStats").style = "display:visible";
+					document.getElementById("MinerPayments").style = "display:visible";
+					document.getElementById("totalPayment").innerHTML = data.wallet_total_payment;
+					if ((currentWalletAddress != walletAddress))
+					{
+						currentWalletAddress = walletAddress;
+						docCookies.setItem('mining_address', currentWalletAddress, Infinity);
+						if (walletStatsAutoUpdate == false)
+						{
+							walletStatsAutoUpdate = true;
+							walletStatsAutoUpdateObject = setInterval(GetWalletStatsAuto, 5000);
+						}
+						else
+						{
+							if (walletStatsAutoUpdateObject != null)
+							{
+								walletStatsAutoUpdate = false;
+								clearInterval(walletStatsAutoUpdateObject);
+								walletStatsAutoUpdate = true;
+								walletStatsAutoUpdateObject = setInterval(GetWalletStatsAuto, 5000);
+							}
+						}
+					}
+					UpdateWalletPayment(data);
+				}
+				else
+				{
+					document.getElementById("errorWalletAddress").style = "display:visible";
+					document.getElementById("MinerStats").style = "display:none";
+					document.getElementById("MinerPayments").style = "display:none";
+					document.getElementById("WalletAddressNotExist").innerHTML = walletAddress;
+					currentWalletAddress = "";
+					totalTransaction = 0;
+					transaction = [];
+					var table = document.getElementById("transactionTable");
+					for(var i = table.rows.length - 1; i > 0; i--)
+					{
+						table.deleteRow(i);
+					}
+
+					docCookies.setItem('mining_address', "", Infinity);
+					if (walletStatsAutoUpdateObject != null)
+					{
+						walletStatsAutoUpdate = false;
+						clearInterval(walletStatsAutoUpdateObject);
+					}
+				}
+			}
+		}
+		xmlHttp.open("GET", apiHost + "get_wallet_stats|"+walletAddress, true); // async
+		xmlHttp.send();
+	}
+
+	function GetWalletStatsAuto()
+	{
+		var xmlHttp = new XMLHttpRequest();
+		xmlHttp.onreadystatechange = function()
+		{ 
+			if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+			{
+				var data = JSON.parse(xmlHttp.responseText);
+				document.getElementById("totalHashrate").innerHTML = formatHashrate(data.wallet_total_hashrate);
+				document.getElementById("totalGoodShare").innerHTML = data.wallet_total_good_share;
+				document.getElementById("totalPendingBalance").innerHTML = data.wallet_total_balance + " " + coinMinName;
+				document.getElementById("totalPaid").innerHTML = data.wallet_total_paid + " " + coinMinName;
+				document.getElementById("MinerStats").style = "display:visible";
+				document.getElementById("MinerPayments").style = "display:visible";
+				document.getElementById("totalPayment").innerHTML = data.wallet_total_payment;
+				UpdateWalletPayment(data);
+			}
+		}
+		xmlHttp.open("GET", apiHost + "get_wallet_stats|"+currentWalletAddress, true); // async
+		xmlHttp.send();
+	}
+
+	
+
+	function UpdateWalletPayment(data)
+	{		
+		if (totalTransaction == 0)
+		{
+			totalTransaction = data.wallet_total_payment;
+			if (transaction.length == 0)
+			{
+				var totalRound = 0;
+				for(var i = totalTransaction; i > 0; i--)
+				{
+					if (totalRound < maxTransaction)
+					{
+						totalRound++;
+						waitTransaction(i);
+					}
+				}
+			}
+		}
+		else
+		{
+			if (totalTransaction < data.wallet_total_payment)
+			{
+				for (var i = totalTransaction; i <= data.wallet_total_payment; i++)
+				{
+					waitNewTransaction(i);
+				}
+			}
+			totalTransaction = data.wallet_total_payment;
+		}
+	}
+
+
+	async function waitTransaction(transactionId)
+	{
+		return await new Promise(r => GetCoinTransactionPerId(transactionId));
+	}
+
+	async function waitNewTransaction(transactionId)
+	{
+		return await new Promise(r => GetCoinNewTransactionPerId(transactionId));
+	}
+
+
+	function AskMoreTransaction()
+	{
+		if (transaction.length < (maxTransaction * pageTransaction))
+		{
+			if ((maxTransaction * pageTransaction) <= totalTransaction)
+			{
+				var start = totalTransaction - (maxTransaction * (pageTransaction-1));
+				var difference = totalTransaction - (maxTransaction * pageTransaction);
+				for(var i = start ; i > difference; i--)
+				{
+					if (i > 0)
+					{
+						GetCoinTransactionPerId(i);
+					}
+				}
+			}
+			else
+			{
+				var start = totalTransaction - transaction.length;
+				if (start > 0)
+				{
+					for(var i = start; i > 0; i--)
+					{
+						if (i > 0)
+						{
+							GetCoinTransactionPerId(i);
+						}
+					}
+				}
+				else
+				{
+					pageTransaction--;
+				}
+			}
+		}
+		else
+		{
+			pageTransaction--;
+		}
+	}
+
+
+	async function GetCoinTransactionPerId(transactionId)
+	{
+		var xmlHttp = new XMLHttpRequest();
+		xmlHttp.timeout = 1000;
+		xmlHttp.onreadystatechange = function(e)
+		{ 
+			if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+			{
+				var data = JSON.parse(xmlHttp.responseText);
+				if (transaction.indexOf(data.payment_hash) == -1)
+				{
+					transaction.push(data.payment_hash);
+					var rowTransaction = document.createElement('tr');
+					rowTransaction.setAttribute('data-json', data);
+
+					var rowTransactionContent = '<td>' + transactionId + '</td>' +
+						'<td>' + formatDate(data.payment_date_sent) + '</td>' +
+					 	'<td><a href=\"' + transactionExplorer + data.payment_hash + '\" target=\"_blank\">' + data.payment_hash + '</a></td>' +
+					 	'<td>' + data.payment_amount + ' ' + coinMinName + '</td>' +
+						'<td>' + data.payment_fee + ' ' + coinMinName + '</td>';
+
+					rowTransaction.innerHTML = rowTransactionContent;
+					var transactionList = $('#payments_rows');
+					transactionList.append(rowTransaction);
+					previousSorting = "asc";
+					sortTable(1);
+				}
+			}
+		}
+		xmlHttp.open("GET", apiHost + "get_wallet_payment_by_id|"+currentWalletAddress+"|" + transactionId, true); // async
+		xmlHttp.send();
+	}
+
+	async function GetCoinNewTransactionPerId(transactionId)
+	{
+		var xmlHttp = new XMLHttpRequest();
+		xmlHttp.onreadystatechange = function()
+		{ 
+			if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+			{
+				var data = JSON.parse(xmlHttp.responseText);
+				if (transaction.indexOf(data.payment_hash) == -1)
+				{
+					transaction.push(data.payment_hash);
+					var rowTransaction = document.createElement('tr');
+					rowTransaction.setAttribute('data-json', data);
+
+					var rowTransactionContent = '<td>' + transactionId + '</td>' +
+						'<td>' + formatDate(data.payment_date_sent) + '</td>' +
+					 	'<td><a href=\"' + transactionExplorer + data.payment_hash + '\" target=\"_blank\">' + data.payment_hash + '</a></td>' +
+					 	'<td>' + data.payment_amount + ' ' + coinMinName + '</td>' +
+						'<td>' + data.payment_fee + ' ' + coinMinName + '</td>';
+
+					var transactionList = document.getElementById("payments_rows");
+					var rowInsert = transactionList.insertRow(0);
+					rowInsert.innerHTML = rowTransactionContent;
+					rowInsert.appendChild(rowTransaction);
+					previousSorting = "asc";
+					sortTable(1);
+				}
+			}
+		}
+		xmlHttp.open("GET", apiHost + "get_wallet_payment_by_id|"+currentWalletAddress+"|" + transactionId, true); // async
+		xmlHttp.send();
+	}
+
+
+	function GetTimeAgo(timeago)
+	{
+		if (timeago < 60) // Seconds
+		{
+			return parseFloat(timeago).toFixed(0) + " Second(s)";
+		}
+		else if (timeago >= 60 && timeago < 3600) // Minutes
+		{
+			timeago = (timeago / 60);
+			return parseFloat(timeago).toFixed(0) + " Minute(s)";
+		}
+		else if (timeago >= 3600 && timeago < 84600) // Hours
+		{
+			timeago = (timeago / 3600);
+			return parseFloat(timeago).toFixed(0) + " Hour(s)";
+		}
+		else if (timeago >= 84600 && timeago < 592200) // Days
+		{
+			timeago = (timeago / 84600);
+			return parseFloat(timeago).toFixed(0) + " Day(s)";
+		}
+		else if (timeago >= 592200 && timeago < 2368800) // Weeks
+		{
+			timeago = (timeago / 592200);
+			return parseFloat(timeago).toFixed(0) + " Weeks(s)";
+		}
+		else if (timeago >= 2368800 && timeago < 28425600) // Months
+		{
+			timeago = (timeago / 2368800);
+			return parseFloat(timeago).toFixed(0) + " Months(s)";
+		}
+		else if (timeago >= 28425600) // Years
+		{
+			timeago = (timeago / 28425600);
+			return parseFloat(timeago).toFixed(0) + " Year(s)";
+		}
+	}
+
+	function formatDateTime(input){
+		var t = new Date(1970,0,1);
+		t.setSeconds(input);
+		var s = t.toTimeString().substr(0,8);
+		if(input > 86399)
+		{
+			s = Math.floor((t - Date.parse("1/1/70")) / 3600000) + s.substr(2);
+		}
+		return s;
+	};
+
+	function formatDate(time){
+		if (!time) return '';
+		return new Date(parseInt(time) * 1000).toLocaleString();
+	}
+
+	var oldSortingTable = 0;
+
+	var previousSorting = "desc";
+
+	function sortTable(n) {
+		oldSortingTable = n;
+		var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+		table = document.getElementById("transactionTable");
+		switching = true;
+		if (previousSorting == "asc")
+		{
+			dir = "desc"; 
+			previousSorting = "desc";
+		}
+		else
+		{
+			dir = "asc";
+			previousSorting = "asc";
+		}
+	
+		while (switching) {
+			switching = false;
+			rows = table.rows;
+		
+			for (i = 1; i < (rows.length - 1); i++) {
+			shouldSwitch = false;
+		
+			x = rows[i].getElementsByTagName("TD")[n];
+			y = rows[i + 1].getElementsByTagName("TD")[n];
+		
+			if (dir == "asc") {
+				if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+				shouldSwitch = true;
+				break;
+				}
+			} else if (dir == "desc") {
+				if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+				shouldSwitch = true;
+				break;
+				}
+			}
+			}
+			if (shouldSwitch) {
+			rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+			switching = true;
+			switchcount ++; 
+			} else {
+			if (switchcount == 0 && dir == "asc") {
+				dir = "desc";
+				switching = true;
+			}
+			}
+		}
+	}
+
+
+
+	document.getElementById("MinerStats").style = "display:none";
+	document.getElementById("MinerPayments").style = "display:none";
+	document.getElementById("errorWalletAddress").style = "display:none";
+	urls = ['/js/jquery.min.js', '/js/bootstrap.min.js','/js/jquery-3.3.1.min.js'];
+
+	loadScripts(urls, urls.length, function()
+	{
+		WebFontConfig = 
+		{
+			google: { families: [ 'Inconsolata' ] }
+		};
+		(
+			function() 
+			{
+				var wf = document.createElement('script');
+				wf.src = ('https:' == document.location.protocol ? 'https' : 'http') + '://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js';
+				wf.type = 'text/javascript';
+    				wf.async = 'true';
+				var s = document.getElementsByTagName('script')[0];
+				s.parentNode.insertBefore(wf, s);
+			}
+		)();
+
+		GetPoolStats();
+		setInterval(GetPoolStats, 5000);
+
+		if (docCookies.getItem('mining_address') != null)
+		{
+			if (docCookies.getItem('mining_address') != "")
+			{
+				GetWalletStats(docCookies.getItem('mining_address'));
+				document.getElementById("yourStatsInput").value = docCookies.getItem('mining_address');
+			}
+		}
+		$("#lookUp").click(function()
+		{
+			var walletAddress = $("#yourStatsInput").val().trim();
+			if (walletAddress != currentWalletAddress)
+			{
+				if (walletAddress == null)
+				{
+					$("#yourStatsInput").focus();
+				}
+				else
+				{
+					document.getElementById("errorWalletAddress").style = "display:none";
+					transaction = [];
+					document.getElementById("payments_rows").innerHTML = "";
+					totalTransaction = 0;
+					pageTransaction = 1;
+					GetWalletStats(walletAddress);
+				}
+			}
+		});
+
+
+		$("#yourStatsInput").keyup(function(e)
+		{
+			if (e.keyCode === 13)
+				$("#lookUp").click();
+		});
+
+		$("#loadMorePayments").click(function()
+		{
+			pageTransaction++;
+			AskMoreTransaction();
+		});
+
+		if(window.location.href.indexOf("#") != -1)
+		{
+			GetWalletStats(window.location.href.split('#')[1]);
+			document.getElementById("yourStatsInput").value = window.location.href.split('#')[1];
+		}
+
+
+	});
+
+	function formatHashrate(input)
+	{
+		var result = parseFloat(input.replace(",", "."));
+		if (result < 1000)
+		{
+			return toFixedTrunc(parseFloat(result), 2) + " H/s";
+		}
+		else
+		{
+			if (result >= 1000 && result < 1000000) // KH
+			{
+				var result = (result/1000);
+				return toFixedTrunc(parseFloat(result), 2) + " KH/s";
+			}
+			if (result >= 1000000 && result < 1000000000) // MH
+			{
+				var result = (result/1000000);
+				return toFixedTrunc(parseFloat(result), 2) + " MH/s";
+			}
+			if (result >= 1000000000) // GH
+			{
+				var result = (result/1000000000);
+				return toFixedTrunc(parseFloat(result), 2) + " GH/s";
+			}
+		}
+	}
+
+	function toFixedTrunc(value, n)
+	{
+		const v = value.toString().split('.');
+		if (n <= 0) 
+			return v[0];
+
+		let f = v[1] || '';
+
+		if (f.length > n)
+			return `${v[0]}.${f.substr(0,n)}`;
+
+		while (f.length < n)
+			f += '0';
+
+  		return `${v[0]}.${f}`
+	}
+
+</script>
+</html>
