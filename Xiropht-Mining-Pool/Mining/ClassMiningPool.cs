@@ -62,7 +62,11 @@ namespace Xiropht_Mining_Pool.Mining
                         ClassLog.ConsoleWriteLog("Error on Listen incoming connection to Mining Pool port: " + MiningPoolPort + ", exception: " + error.Message, ClassLogEnumeration.IndexPoolMinerErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
                     }
                 }
-            });
+            })
+            {
+                Priority = ThreadPriority.BelowNormal,
+                IsBackground = true
+            };
             ThreadMiningPool.Start();
         }
 
@@ -584,7 +588,7 @@ namespace Xiropht_Mining_Pool.Mining
                                     }
                                     else
                                     {
-                                        if (listShare[CurrentMiningJob] < totalJobDone)
+                                        if (listShare[CurrentMiningJob] < totalShareDone)
                                         {
                                             listShare[CurrentMiningJob] = totalShareDone;
                                         }
@@ -598,7 +602,7 @@ namespace Xiropht_Mining_Pool.Mining
                                     if (estimatedHashrate != float.PositiveInfinity && estimatedHashrate != float.NegativeInfinity && !float.IsNaN(estimatedHashrate))
                                     {
                                         CurrentHashrate = estimatedHashrate;
-                                        Console.WriteLine("Estimated hashrate: " + CurrentHashrate + " H/s");
+                                        //Console.WriteLine("Estimated hashrate: " + CurrentHashrate + " H/s");
                                     }
                                 }
                                 else
@@ -606,11 +610,11 @@ namespace Xiropht_Mining_Pool.Mining
                                     if (estimatedHashrate != float.PositiveInfinity && estimatedHashrate != float.NegativeInfinity && !float.IsNaN(estimatedHashrate))
                                     {
                                         CurrentHashrate = estimatedHashrate;
-                                        Console.WriteLine("Estimated hashrate: " + CurrentHashrate + " H/s");
+                                        //Console.WriteLine("Estimated hashrate: " + CurrentHashrate + " H/s");
                                     }
                                     if (listShare.ContainsKey(CurrentMiningJob))
                                     {
-                                        if (listShare[CurrentMiningJob] < totalJobDone)
+                                        if (listShare[CurrentMiningJob] < totalShareDone)
                                         {
                                             listShare[CurrentMiningJob] = totalShareDone;
                                         }
