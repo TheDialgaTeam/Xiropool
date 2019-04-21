@@ -1,5 +1,5 @@
 # Xiropht-Mining-Pool
-Mining pool tool compatible with Xiropht, released has example, this mining pool tool is compatible with Windows/Linux and more.
+Mining pool tool compatible with Xiropht, released has example tool with an example of website, this mining pool tool is compatible with Windows/Linux and more.
 
 <h2>Description</h2>
 This mining pool tool don't require to sync blocks to receive the latest blocktemplate.
@@ -23,3 +23,9 @@ The network protocol used by this tool is the same of the Solo Miner and the Pro
 <b>Only the compatible miner work with this tool, solo miner and proxy solo miner are not compatible</b>
 
 Xiropht-Miner: https://github.com/XIROPHT/Xiropht-Miner
+
+<h2>Credits</h2>
+
+**Tool and website programmed by Xiropht Developer.**
+
+**Design of the website inspired of Cryptonote-Universal-Pool repository: https://github.com/fancoder/cryptonote-universal-pool/tree/master/website**
