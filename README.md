@@ -20,7 +20,7 @@ The network protocol used by this tool is the same of the Solo Miner and the Pro
 
 <h2>Compatible miner tools</h2>
 
-<b>Only the compatible miner work with this tool, solo miner and proxy solo miner are not compatible</b>
+<b>Only compatible miner tools work with this tool, solo miner and proxy solo miner are not compatible.</b>
 
 Xiropht-Miner: https://github.com/XIROPHT/Xiropht-Miner
 
