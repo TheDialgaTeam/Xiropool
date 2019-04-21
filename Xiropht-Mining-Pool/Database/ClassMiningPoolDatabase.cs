@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using Xiropht_Mining_Pool.Log;
@@ -167,6 +168,7 @@ namespace Xiropht_Mining_Pool.Database
                             using (StreamReader sr = new StreamReader(bs))
                             {
                                 string line;
+                                List<KeyValuePair<long, string>> ListTransactionPool = new List<KeyValuePair<long, string>>();
                                 while ((line = sr.ReadLine()) != null)
                                 {
                                     if (line.StartsWith(ClassMiningPoolTransactionDatabaseEnumeration.DatabaseTransactionStart))
@@ -176,13 +178,23 @@ namespace Xiropht_Mining_Pool.Database
                                         if (ClassMinerStats.DictionaryMinerTransaction.ContainsKey(splitTransactionLine[0]))
                                         {
                                             ClassMinerStats.DictionaryMinerTransaction[splitTransactionLine[0]].Add(splitTransactionLine[1] + "|" + splitTransactionLine[2] + "|" + splitTransactionLine[3] + "|" + splitTransactionLine[4]);
-                                            ClassMinerStats.DictionaryPoolTransaction.Add(ClassMinerStats.DictionaryPoolTransaction.Count, splitTransactionLine[1] + "|" + splitTransactionLine[2] + "|" + splitTransactionLine[3] + "|" + splitTransactionLine[4]);
                                         }
                                         else
                                         {
                                             ClassMinerStats.DictionaryMinerTransaction.Add(splitTransactionLine[0], new List<string>() { splitTransactionLine[1] + "|" + splitTransactionLine[2] + "|" + splitTransactionLine[3] + "|" + splitTransactionLine[4]});
-                                            ClassMinerStats.DictionaryPoolTransaction.Add(ClassMinerStats.DictionaryPoolTransaction.Count, splitTransactionLine[1] + "|" + splitTransactionLine[2] + "|" + splitTransactionLine[3] + "|" + splitTransactionLine[4]);
                                         }
+                                        long dateSend = long.Parse(splitTransactionLine[4]);
+                                        string transactionInfo = splitTransactionLine[1] + "|" + splitTransactionLine[2] + "|" + splitTransactionLine[3] + "|" + splitTransactionLine[4];
+                                        KeyValuePair<long, string> transactionKeyValuePair = new KeyValuePair<long, string>(dateSend, transactionInfo);
+                                        ListTransactionPool.Add(transactionKeyValuePair);
+                                    }
+                                }
+                                if (ListTransactionPool.Count > 0)
+                                {
+                                    ListTransactionPool = ListTransactionPool.OrderBy(x => x.Key).ToList();
+                                    foreach(var transactionPool in ListTransactionPool)
+                                    {
+                                        ClassMinerStats.DictionaryPoolTransaction.Add(ClassMinerStats.DictionaryPoolTransaction.Count, transactionPool.Value);
                                     }
                                 }
                             }
