@@ -2,9 +2,10 @@
 Mining pool tool compatible with Xiropht, released has example tool with an example of website, this mining pool tool is compatible with Windows/Linux and more.
 
 <h2>Description</h2>
-This mining pool tool don't require to sync blocks to receive the latest blocktemplate.
 
-The network protocol used by this tool is the same of the Solo Miner and the Proxy Solo Miner for reach the network.
+-> This mining pool tool don't require to sync blocks to receive the latest blocktemplate.
+
+-> The network protocol used by this tool is the same of the Solo Miner and the Proxy Solo Miner for reach the network.
 
 
 <h2>Requirements</h2>
@@ -23,6 +24,14 @@ The network protocol used by this tool is the same of the Solo Miner and the Pro
 <b>Only compatible miner tools work with this tool, solo miner and proxy solo miner are not compatible.</b>
 
 Xiropht-Miner: https://github.com/XIROPHT/Xiropht-Miner
+
+<h2>Website Requirements</h2>
+
+-> Web server using apache, nginx or others.
+
+-> Setting up config.js file.
+
+-> For support HTTPS on the api of the pool, be sure to configure a frontend proxy service like a Nginx Proxy.
 
 <h2>Credits</h2>
 
