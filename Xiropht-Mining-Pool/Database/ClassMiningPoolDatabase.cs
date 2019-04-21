@@ -196,6 +196,7 @@ namespace Xiropht_Mining_Pool.Database
                                     {
                                         ClassMinerStats.DictionaryPoolTransaction.Add(ClassMinerStats.DictionaryPoolTransaction.Count, transactionPool.Value);
                                     }
+                                    ListTransactionPool.Clear();
                                 }
                             }
                         }
