@@ -84,7 +84,7 @@
 			<div><i class="fa fa-unlock-alt"></i> Network Difficulty: <span id="NetworkDifficulty"></span></div>
 			<div><i class="fa fa-clock-o"></i> Last Block Found: <span id="NetworkLastBlockFoundDate"></span></div>
 			<div><i class="fa fa-paw"></i> Last Block Found Hash: <span id="NetworkLastBlockFoundHash"></span></div>
-			<div><i class="fa fa-money"></i> Block Reward: Fixed to 10.00000000 XIR</div>
+			<div><i class="fa fa-money"></i>Last Block Reward: <span id="NetworkLastBlockReward"></span></div>
 		</div>
 		<div class="col-xs-12 col-md-5 text-center stats">
 			<h3>Pool</h3>
@@ -271,6 +271,7 @@
 					document.getElementById("NetworkLastBlockFoundDate").innerHTML = formatDate(data.network_last_block_found_timestamp);
 				}
 				document.getElementById("NetworkLastBlockFoundHash").innerHTML = "<a href='" + blockExplorer + data.network_last_block_hash + "' target='_blank'>" + data.network_last_block_hash.substr(0,16) +"..</a>";
+				document.getElementById("NetworkLastBlockReward").innerHTML = data.network_last_block_reward + " "+ coinMinName;
 			}
 		}
 		xmlHttp.open("GET", apiHost + "get_pool_stats", true); // async
