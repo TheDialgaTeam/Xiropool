@@ -33,6 +33,25 @@ Xiropht-Miner: https://github.com/XIROPHT/Xiropht-Miner
 
 -> For support HTTPS on the api of the pool, be sure to configure a frontend proxy service like a Nginx Proxy.
 
+<h2>Command lines</h2>
+
+-> API Request list: https://github.com/XIROPHT/Xiropht-Mining-Pool/wiki/Pool---API-HTTP-GET-Request-list
+
+-> Direct command line list:
+  - help | Show list of commands details.
+  
+  - stats | Show mining pool stats.
+  
+  - banminer |  ban a miner wallet address, syntax: banminer wallet_address time
+  
+  - exit | Safe exit, Stop mining pool, save and exit.
+
+<h2>Future features</h2>
+
+-> SQLite & MySQL Database system option, instead of direct database disk.
+
+-> Worker monitoring system.
+
 <h2>Credits</h2>
 
 **Tool and website programmed by Xiropht Developer.**
