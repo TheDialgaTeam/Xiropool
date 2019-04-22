@@ -46,6 +46,7 @@ namespace Xiropht_Mining_Pool.Api
         public const int MaxKeepAlive = 30;
         public static Dictionary<int, string> DictionaryBlockHashCache = new Dictionary<int, string>();
         public static Dictionary<int, string> DictionaryBlockDateFoundCache = new Dictionary<int, string>();
+        public static Dictionary<int, string> DictionaryBlockRewardCache = new Dictionary<int, string>();
 
         /// <summary>
         /// Enable http/https api of the remote node, listen incoming connection throught web client.
@@ -485,10 +486,12 @@ namespace Xiropht_Mining_Pool.Api
                         var lastBlockFound = int.Parse(ClassMiningPoolGlobalStats.CurrentBlockId) - 1;
                         string blockHash = string.Empty;
                         string blockTimestampFound = "0";
+                        string blockReward = "0";
                         if (ClassApi.DictionaryBlockHashCache.ContainsKey(lastBlockFound))
                         {
                             blockHash = ClassApi.DictionaryBlockHashCache[lastBlockFound];
                             blockTimestampFound = ClassApi.DictionaryBlockDateFoundCache[lastBlockFound];
+                            blockReward = ClassApi.DictionaryBlockRewardCache[lastBlockFound];
                         }
                         else
                         {
@@ -498,6 +501,7 @@ namespace Xiropht_Mining_Pool.Api
                                 JObject blockJson = JObject.Parse(blockResult);
                                 blockHash = blockJson["block_hash"].ToString();
                                 blockTimestampFound = blockJson["block_timestamp_found"].ToString();
+                                blockReward = blockJson["block_reward"].ToString();
                                 try
                                 {
                                     ClassApi.DictionaryBlockHashCache.Add(lastBlockFound, blockHash);
@@ -509,6 +513,14 @@ namespace Xiropht_Mining_Pool.Api
                                 try
                                 {
                                     ClassApi.DictionaryBlockDateFoundCache.Add(lastBlockFound, blockTimestampFound);
+                                }
+                                catch
+                                {
+
+                                }
+                                try
+                                {
+                                    ClassApi.DictionaryBlockRewardCache.Add(lastBlockFound, blockReward);
                                 }
                                 catch
                                 {
@@ -548,7 +560,8 @@ namespace Xiropht_Mining_Pool.Api
                             {"network_difficulty", ClassMiningPoolGlobalStats.CurrentBlockDifficulty },
                             {"network_hashrate",  "" + networkHashrate },
                             {"network_last_block_hash", blockHash },
-                            {"network_last_block_found_timestamp",  blockTimestampFound}
+                            {"network_last_block_found_timestamp", blockTimestampFound},
+                            {"network_last_block_reward", blockReward }
 
                         };
                         await BuildAndSendHttpPacketAsync(string.Empty, true, poolStatsContent);
