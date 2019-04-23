@@ -234,6 +234,10 @@
 
 	loadScripts(urls, urls.length, function()
 	{
+		if (apiHost.charAt(apiHost.length-1) != '/')
+		{
+			apiHost += "/";
+		}
 		GetPoolStats();
 		setInterval(GetPoolStats, 5000);
 		WebFontConfig = 
