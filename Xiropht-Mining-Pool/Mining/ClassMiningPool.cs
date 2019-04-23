@@ -539,7 +539,7 @@ namespace Xiropht_Mining_Pool.Mining
             }
             float totalShareDone = TotalGoodShareDone;
             string lastBlockHash = ClassMiningPoolGlobalStats.CurrentBlockHash;
-            Dictionary<float, float> listShare = new Dictionary<float, float>(); // Job, hashrate
+            Dictionary<float, string> listShare = new Dictionary<float, string>(); // Job, hashrate
             await Task.Delay(MiningPoolSetting.MiningPoolIntervalChangeJob * 1000);
             while (IsConnected)
             {
@@ -582,46 +582,55 @@ namespace Xiropht_Mining_Pool.Mining
                                 estimatedHashrate = totalShareDone * CurrentMiningJob;
                                 if (listShare.Count > 1)
                                 {
+
                                     if (!listShare.ContainsKey(CurrentMiningJob))
                                     {
-                                        listShare.Add(CurrentMiningJob, totalShareDone);
+                                        listShare.Add(CurrentMiningJob, totalShareDone + "|" + ClassMiningPoolGlobalStats.CurrentBlockId);
                                     }
                                     else
                                     {
-                                        if (listShare[CurrentMiningJob] < totalShareDone)
+                                        var splitShare = listShare[CurrentMiningJob].Split(new[] { "|" }, StringSplitOptions.None);
+                                        var totalShare = float.Parse(splitShare[0]);
+                                        if (totalShare < totalShareDone)
                                         {
-                                            listShare[CurrentMiningJob] = totalShareDone;
+                                            listShare[CurrentMiningJob] = (totalShare + totalShareDone) + "|" + ClassMiningPoolGlobalStats.CurrentBlockId;
                                         }
                                     }
                                     float tmpHashrate = 0;
                                     foreach (var hashrate in listShare)
                                     {
-                                        tmpHashrate += (hashrate.Key * hashrate.Value);
+                                        var splitShare = hashrate.Value.Split(new[] { "|" }, StringSplitOptions.None);
+                                        var totalShare = float.Parse(splitShare[0]);
+                                        var blockIdShare = long.Parse(splitShare[1]);
+                                        if (blockIdShare == int.Parse(ClassMiningPoolGlobalStats.CurrentBlockId))
+                                        {
+                                            tmpHashrate += (hashrate.Key * totalShare);
+                                        }
                                     }
                                     estimatedHashrate = (tmpHashrate / (listShare.Count-1));
                                     if (estimatedHashrate != float.PositiveInfinity && estimatedHashrate != float.NegativeInfinity && !float.IsNaN(estimatedHashrate))
                                     {
-                                        CurrentHashrate = estimatedHashrate;
-                                        //Console.WriteLine("Estimated hashrate: " + CurrentHashrate + " H/s");
+                                        CurrentHashrate = estimatedHashrate * 3;
                                     }
                                 }
                                 else
                                 {
                                     if (estimatedHashrate != float.PositiveInfinity && estimatedHashrate != float.NegativeInfinity && !float.IsNaN(estimatedHashrate))
                                     {
-                                        CurrentHashrate = estimatedHashrate;
-                                        //Console.WriteLine("Estimated hashrate: " + CurrentHashrate + " H/s");
+                                        CurrentHashrate = estimatedHashrate * 3;
                                     }
                                     if (listShare.ContainsKey(CurrentMiningJob))
                                     {
-                                        if (listShare[CurrentMiningJob] < totalShareDone)
+                                        var splitShare = listShare[CurrentMiningJob].Split(new[] { "|" }, StringSplitOptions.None);
+                                        var totalShare = float.Parse(splitShare[0]);
+                                        if (totalShare < totalShareDone)
                                         {
-                                            listShare[CurrentMiningJob] = totalShareDone;
+                                            listShare[CurrentMiningJob] = (totalShare + totalShareDone) + "|" + ClassMiningPoolGlobalStats.CurrentBlockId;
                                         }
                                     }
                                     else
                                     {
-                                        listShare.Add(CurrentMiningJob, totalShareDone);
+                                        listShare.Add(CurrentMiningJob, totalShareDone + "|" + ClassMiningPoolGlobalStats.CurrentBlockId);
                                     }
                                 }
                             }
@@ -651,7 +660,7 @@ namespace Xiropht_Mining_Pool.Mining
 
                 }
                 totalShareDone = TotalGoodShareDone;
-                await Task.Delay(MiningPoolSetting.MiningPoolIntervalChangeJob * 1000);
+                await Task.Delay(1000);
             }
             listShare.Clear();
         }
