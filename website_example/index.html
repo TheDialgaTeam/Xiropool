@@ -237,7 +237,7 @@
 				else
 				{
 					var difference = data.network_difficulty / data.network_hashrate;
-					var seconds = (GetAmountOfCalculationPossibility(data.network_difficulty)  / GetAmountOfCalculationPossibility(data.pool_hashrate)) * (60 * (24/difference));
+					var seconds = (GetAmountOfCalculationPossibility(data.network_difficulty)  / parseFloat(data.pool_hashrate)) * 60 * 24;
 					if (seconds >= 1)
 					{
 						document.getElementById("PoolFoundBlockTime").innerHTML = GetTimeAgo(seconds) + " (est)";
