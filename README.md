@@ -52,6 +52,8 @@ Xiropht-Miner: https://github.com/XIROPHT/Xiropht-Miner
 
 -> Worker monitoring system.
 
+-> Administrator panel.
+
 <h2>Credits</h2>
 
 **Tool and website programmed by Xiropht Developer.**
