@@ -54,7 +54,7 @@ Xiropht-Miner: https://github.com/XIROPHT/Xiropht-Miner
 
 -> Administrator panel.
 
-<h2>Systems who need to be optimized</h2>
+<h2>Systems who need to be tested and potentially need to be fixed</h2>
 
 -> Hashrate calculations of miners on the mining pool side need to be optimized and need to be fully tested.
 
