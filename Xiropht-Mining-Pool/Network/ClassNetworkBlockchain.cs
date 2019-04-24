@@ -61,11 +61,7 @@ namespace Xiropht_Mining_Pool.Network
 
             LastPacketReceived = ClassUtility.GetCurrentDateInSecond();
             ListenConnectionAsync();
-            if (!await LoginConnection())
-            {
-                IsConnected = false;
-                return false;
-            }
+
             return true;
         }
 
@@ -111,11 +107,11 @@ namespace Xiropht_Mining_Pool.Network
  
                 while (!Program.Exit)
                 {
-                    if (!IsConnected ||  LastPacketReceived + 5 < ClassUtility.GetCurrentDateInSecond())
+                    if (!IsConnected || LastPacketReceived + 5 < ClassUtility.GetCurrentDateInSecond() || !ClassSeedNodeConnector.ReturnStatus())
                     {
                         IsConnected = false;
                         ClassLog.ConsoleWriteLog("Pool is disconnected from the network, reconnect now..", ClassLogEnumeration.IndexPoolGeneralErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
-                        ListOfMiningMethodName.Clear();
+                        //ListOfMiningMethodName.Clear();
                         if (ThreadListenNetwork != null && (ThreadListenNetwork.IsAlive || ThreadListenNetwork != null))
                         {
                             ThreadListenNetwork.Abort();
@@ -161,11 +157,15 @@ namespace Xiropht_Mining_Pool.Network
             {
                 try
                 {
-                    while (IsConnected && ClassSeedNodeConnector.ReturnStatus() && !Program.Exit)
+                    if (!await LoginConnection())
+                    {
+                        IsConnected = false;
+                    }
+                    while ((IsConnected && ClassSeedNodeConnector.ReturnStatus()) && !Program.Exit)
                     {
                         try
                         {
-                            string packet = await ClassSeedNodeConnector.ReceivePacketFromSeedNodeAsync(Certificate, false, true).ConfigureAwait(false);
+                            string packet = await ClassSeedNodeConnector.ReceivePacketFromSeedNodeAsync(Certificate, false, true);
 
                             if (packet.Contains("*"))
                             {

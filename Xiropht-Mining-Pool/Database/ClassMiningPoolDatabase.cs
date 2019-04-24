@@ -255,8 +255,6 @@ namespace Xiropht_Mining_Pool.Database
                     }
                     #endregion
 
-                    Thread.Sleep(AutoSaveMiningPoolDatabasesInterval);
-
                     #region Save Database Pool
                     if (ClassMiningPoolGlobalStats.ListBlockFound.Count > 0)
                     {
@@ -280,32 +278,6 @@ namespace Xiropht_Mining_Pool.Database
                             }
                         }
                         ClassLog.ConsoleWriteLog("Auto save pool database: " + totalBlockFound + " total blocks found saved.", ClassLogEnumeration.IndexPoolGeneralLog);
-                    }
-                    #endregion
-
-                    Thread.Sleep(AutoSaveMiningPoolDatabasesInterval);
-
-                    #region Save Database Transactions
-                    if (ClassMinerStats.DictionaryMinerTransaction.Count > 0)
-                    {
-                        File.Create(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + MinerTransactionDatabaseFile)).Close();
-                        using (var minerWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + MinerTransactionDatabaseFile), true, Encoding.UTF8, 8192) { AutoFlush = true })
-                        {
-                            foreach (var miner in ClassMinerStats.DictionaryMinerTransaction)
-                            {
-                                if (!string.IsNullOrEmpty(miner.Key))
-                                {
-                                    if (miner.Value.Count > 0)
-                                    {
-                                        foreach (var transaction in miner.Value)
-                                        {
-                                            string line = ClassMiningPoolTransactionDatabaseEnumeration.DatabaseTransactionStart + miner.Key + "|" + transaction;
-                                            minerWriter.WriteLine(line);
-                                        }
-                                    }
-                                }
-                            }
-                        }
                     }
                     #endregion
                     
@@ -402,6 +374,18 @@ namespace Xiropht_Mining_Pool.Database
             }
             #endregion
 
+        }
+
+        /// <summary>
+        /// Save transaction database.
+        /// </summary>
+        public static void SaveTransactionPoolDatabase(string transaction)
+        {
+            using (var transactionWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + MinerTransactionDatabaseFile), true, Encoding.UTF8, 8192) { AutoFlush = true })
+            {
+                transactionWriter.WriteLine(ClassMiningPoolTransactionDatabaseEnumeration.DatabaseTransactionStart+transaction);
+            }
+           
         }
     }
 }

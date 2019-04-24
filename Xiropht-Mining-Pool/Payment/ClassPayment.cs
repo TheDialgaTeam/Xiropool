@@ -57,7 +57,7 @@ namespace Xiropht_Mining_Pool.Payment
                                                     minersBalance = minersBalance - MiningPoolSetting.MiningPoolFeeTransactionPayment;
                                                     ClassLog.ConsoleWriteLog("Attempt to send transaction of " + minersBalance + " " + ClassConnectorSetting.CoinNameMin + " to miner " + minerStats.Key, ClassLogEnumeration.IndexPoolPaymentLog);
                                                     long dateSent = ClassUtility.GetCurrentDateInSecond();
-                                                    string resultPayment = await ClassRpcWallet.SendTransaction(minerStats.Key, minersBalance);
+                                                    string resultPayment = await ClassRpcWallet.SendTransaction(minerStats.Key, minersBalance.ToString("F"+ClassConnectorSetting.MaxDecimalPlace).Replace(",", "."));
                                                     if (resultPayment != null)
                                                     {
                                                         var resultPaymentSplit = resultPayment.Split(new[] { "|" }, StringSplitOptions.None);

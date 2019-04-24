@@ -55,12 +55,13 @@ namespace Xiropht_Mining_Pool.RpcWallet
         /// </summary>
         /// <param name="walletAddressTarget"></param>
         /// <returns></returns>
-        public static async Task<string> SendTransaction(string walletAddressTarget, decimal amount)
+        public static async Task<string> SendTransaction(string walletAddressTarget, string amount, bool anonymous = false)
         {
             ClassLog.ConsoleWriteLog("Try to send a transaction to wallet address target: "+walletAddressTarget+" of amount: "+amount+" "+ClassConnectorSetting.CoinNameMin, ClassLogEnumeration.IndexPoolWalletLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
             try
             {
-                string request = "send_transaction_by_wallet_address|" + MiningPoolSetting.MiningPoolWalletAddress + "|" + amount + "|" + MiningPoolSetting.MiningPoolFeeTransactionPayment + "|0|" + walletAddressTarget;
+                int anonymousTransaction = anonymous ? 1: 0;
+                string request = "send_transaction_by_wallet_address|" + MiningPoolSetting.MiningPoolWalletAddress + "|" + amount + "|" + MiningPoolSetting.MiningPoolFeeTransactionPayment + "|"+anonymousTransaction+"|" + walletAddressTarget;
                 string result = await ProceedHttpRequest("http://" + MiningPoolSetting.MiningPoolRpcWalletHost + ":" + MiningPoolSetting.MiningPoolRpcWalletPort + "/", request);
                 JObject resultJson = JObject.Parse(result);
                 if (resultJson["result"].ToString() != "not_exist")
@@ -96,7 +97,7 @@ namespace Xiropht_Mining_Pool.RpcWallet
             request.AutomaticDecompression = DecompressionMethods.GZip;
             request.ServicePoint.Expect100Continue = false;
             request.KeepAlive = false;
-            request.Timeout = 1000;
+            request.Timeout = 5000;
             request.UserAgent = ClassConnectorSetting.CoinName + " Mining Pool Tool - " + Assembly.GetExecutingAssembly().GetName().Version + "R";
             string responseContent = string.Empty;
             using (HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync())

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using Xiropht_Connector_All.Setting;
@@ -38,6 +39,21 @@ namespace Xiropht_Mining_Pool.Utility
         public static long GetCurrentDateInMilliSecond()
         {
             return DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        }
+
+        public static bool SocketIsConnected(TcpClient socket)
+        {
+            if (socket?.Client != null)
+                try
+                {
+                    return !(socket.Client.Poll(100, SelectMode.SelectRead) && socket.Available == 0);
+                }
+                catch
+                {
+                    return false;
+                }
+
+            return false;
         }
 
         /// <summary>

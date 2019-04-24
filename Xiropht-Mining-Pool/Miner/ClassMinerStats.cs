@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using Xiropht_Mining_Pool.Database;
 using Xiropht_Mining_Pool.Log;
 using Xiropht_Mining_Pool.Mining;
 using Xiropht_Mining_Pool.Setting;
@@ -483,7 +484,7 @@ namespace Xiropht_Mining_Pool.Miner
                 DictionaryMinerTransaction.Add(walletAddress, new List<string>() { hash + "|" + minerBalance + "|" + MiningPoolSetting.MiningPoolFeeTransactionPayment + "|" + dateSent });
             }
             DictionaryPoolTransaction.Add(DictionaryPoolTransaction.Count, hash + "|" + minerBalance + "|" + MiningPoolSetting.MiningPoolFeeTransactionPayment + "|" + dateSent);
-
+            ClassMiningPoolDatabase.SaveTransactionPoolDatabase(walletAddress + "|" + hash + "|" + minerBalance + "|" + MiningPoolSetting.MiningPoolFeeTransactionPayment + "|" + dateSent);
         }
     }
 }

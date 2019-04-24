@@ -268,7 +268,7 @@ namespace Xiropht_Mining_Pool.Setting
         private static void CreatePoolSettingFile()
         {
             Console.WriteLine("No config file found.");
-            File.Create(ClassUtility.ConvertPath(System.AppDomain.CurrentDomain.BaseDirectory+ MiningPoolSettingFile)).Close();
+            File.Create(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory+ MiningPoolSettingFile)).Close();
             Console.WriteLine("Write the wallet address of the pool: ");
             string input = Console.ReadLine();
 

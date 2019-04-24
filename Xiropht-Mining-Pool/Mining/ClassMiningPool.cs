@@ -54,7 +54,7 @@ namespace Xiropht_Mining_Pool.Mining
                 {
                     try
                     {
-                        var client = await TcpListenerMiningPool.AcceptTcpClientAsync().ConfigureAwait(false);
+                        var client = await TcpListenerMiningPool.AcceptTcpClientAsync();
                         await HandleMiner(client).ConfigureAwait(false);
                     }
                     catch (Exception error)
@@ -541,7 +541,7 @@ namespace Xiropht_Mining_Pool.Mining
             string lastBlockHash = ClassMiningPoolGlobalStats.CurrentBlockHash;
             Dictionary<float, string> listShare = new Dictionary<float, string>(); // Job, hashrate
             await Task.Delay(MiningPoolSetting.MiningPoolIntervalChangeJob * 1000);
-            while (IsConnected)
+            while (IsConnected && IsLogged)
             {
                 try
                 {
@@ -684,7 +684,7 @@ namespace Xiropht_Mining_Pool.Mining
                 TcpMiner.SetSocketKeepAliveValues(20 * 60 * 1000, 30 * 1000);
                 IsConnected = true;
                 LastPacketReceived = ClassUtility.GetCurrentDateInSecond();
-                await Task.Factory.StartNew(CheckMinerConnection, CancellationToken.None, TaskCreationOptions.LongRunning, PriorityScheduler.Lowest).ConfigureAwait(false);
+                await Task.Factory.StartNew(CheckMinerConnection, CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
                 await ListenMinerConnection().ConfigureAwait(false);
             }
             else
@@ -712,36 +712,33 @@ namespace Xiropht_Mining_Pool.Mining
                     {
                         using (var bufferPacket = new IncomingPacketConnectionObject())
                         {
-                            int received = 0;
-                            while ((received = await networkReader.ReadAsync(bufferPacket.buffer, 0, bufferPacket.buffer.Length).ConfigureAwait(false)) > 0)
+                            int received = await networkReader.ReadAsync(bufferPacket.buffer, 0, bufferPacket.buffer.Length).ConfigureAwait(false);
+                            if (received > 0)
                             {
-                                if (received > 0)
+                                LastPacketReceived = ClassUtility.GetCurrentDateInSecond();
+                                TotalPacketReceivedPerSecond++;
+                                bufferPacket.packet = Encoding.UTF8.GetString(bufferPacket.buffer, 0, received);
+                                if (bufferPacket.packet.Contains(Environment.NewLine))
                                 {
-                                    LastPacketReceived = ClassUtility.GetCurrentDateInSecond();
-                                    TotalPacketReceivedPerSecond++;
-                                    bufferPacket.packet = Encoding.UTF8.GetString(bufferPacket.buffer, 0, received);
-                                    if(bufferPacket.packet.Contains(Environment.NewLine))
+                                    var splitPacket = bufferPacket.packet.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+                                    foreach (var packetEach in splitPacket)
                                     {
-                                        var splitPacket = bufferPacket.packet.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-                                        foreach(var packetEach in splitPacket)
+                                        if (packetEach != null)
                                         {
-                                            if (packetEach != null)
+                                            if (!string.IsNullOrEmpty(packetEach))
                                             {
-                                                if (!string.IsNullOrEmpty(packetEach))
+                                                if (packetEach.Length > 1)
                                                 {
-                                                    if (packetEach.Length > 1)
-                                                    {
-                                                        await Task.Factory.StartNew(() => HandleMinerPacketAsync(packetEach), CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, PriorityScheduler.Lowest).ConfigureAwait(false);
-                                                    }
+                                                    await Task.Factory.StartNew(() => HandleMinerPacketAsync(packetEach), CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, PriorityScheduler.Lowest).ConfigureAwait(false);
                                                 }
                                             }
                                         }
                                     }
-                                    else
-                                    {
-                                        await Task.Factory.StartNew(() => HandleMinerPacketAsync(bufferPacket.packet), CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                }
+                                else
+                                {
+                                    await Task.Factory.StartNew(() => HandleMinerPacketAsync(bufferPacket.packet), CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, PriorityScheduler.Lowest).ConfigureAwait(false);
 
-                                    }
                                 }
                             }
                         }
@@ -1136,7 +1133,7 @@ namespace Xiropht_Mining_Pool.Mining
                         }
                     }
 
-                    if (!ClassUtils.SocketIsConnected(TcpMiner))
+                    if (!ClassUtility.SocketIsConnected(TcpMiner))
                     {
                         ClassLog.ConsoleWriteLog("Miner IP " + Ip + " connection status is dead, disconnect the miner..", ClassLogEnumeration.IndexPoolMinerErrorLog);
                         IsConnected = false;
@@ -1171,6 +1168,9 @@ namespace Xiropht_Mining_Pool.Mining
         /// </summary>
         public void EndMinerConnection()
         {
+            MinerWalletAddress = string.Empty;
+            IsLogged = false;
+            IsConnected = false;
             try
             {
                 TcpMiner?.Close();
@@ -1188,9 +1188,7 @@ namespace Xiropht_Mining_Pool.Mining
             {
 
             }
-            MinerWalletAddress = string.Empty;
-            IsLogged = false;
-            IsConnected = false;
+
             Dispose();
         }
 
@@ -1205,7 +1203,7 @@ namespace Xiropht_Mining_Pool.Mining
             {
                 using (var networkStream = new NetworkStream(TcpMiner.Client))
                 {
-                    using (var packetObject = new IncomingConnectionObjectSendPacket(packet + Environment.NewLine))
+                    using (var packetObject = new IncomingConnectionObjectSendPacket(packet + "\n"))
                     {
                         await networkStream.WriteAsync(packetObject.packetByte, 0, packetObject.packetByte.Length).ConfigureAwait(false);
                         await networkStream.FlushAsync().ConfigureAwait(false);
