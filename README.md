@@ -60,4 +60,4 @@ Xiropht-Miner: https://github.com/XIROPHT/Xiropht-Miner
 
 **Design of the website inspired of Cryptonote-Universal-Pool repository: https://github.com/fancoder/cryptonote-universal-pool/tree/master/website**
 
-**Newtonsoft.Json library is used since version 0.0.0.1R for the API HTTP/HTTPS system: https://github.com/JamesNK/Newtonsoft.Json**
+**Newtonsoft.Json library is used since version 0.0.0.1R for the API HTTP/HTTPS system, and for done json syntax on mining packets: https://github.com/JamesNK/Newtonsoft.Json**
