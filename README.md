@@ -56,7 +56,7 @@ Xiropht-Miner: https://github.com/XIROPHT/Xiropht-Miner
 
 <h2>Systems who need to be optimized</h2>
 
--> Hashrate calculations of miners need to be optimized and need to be fully tested.
+-> Hashrate calculations of miners on the mining pool side need to be optimized and need to be fully tested.
 
 -> Block found time calculation need to be tested.
 
