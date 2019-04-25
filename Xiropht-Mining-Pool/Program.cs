@@ -6,6 +6,7 @@ using System.IO;
 using System.Reflection;
 using System.Threading;
 using Xiropht_Connector_All.Setting;
+using Xiropht_Connector_All.Utils;
 using Xiropht_Mining_Pool.Api;
 using Xiropht_Mining_Pool.Database;
 using Xiropht_Mining_Pool.Log;
@@ -26,6 +27,7 @@ namespace Xiropht_Mining_Pool
         private static Thread ThreadNetworkBlockchain;
         private static Thread ThreadMiningPoolCommandLines;
         public static CultureInfo GlobalCultureInfo = new CultureInfo("fr-FR"); // Set the global culture info, I don't suggest to change this, this one is used by the blockchain and by the whole network.
+        public static string Certificate;
 
         static void Main(string[] args)
         {
@@ -72,7 +74,7 @@ namespace Xiropht_Mining_Pool
                         {
                             ClassLog.ConsoleWriteLog("Connect Pool to the network for retrieve current blocktemplate..", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
 
-
+                            Certificate = ClassUtils.GenerateCertificate();
                             while (!await ClassNetworkBlockchain.ConnectPoolToBlockchainNetworkAsync())
                             {
                                 Thread.Sleep(5000);

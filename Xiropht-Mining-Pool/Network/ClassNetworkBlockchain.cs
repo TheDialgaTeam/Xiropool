@@ -28,7 +28,6 @@ namespace Xiropht_Mining_Pool.Network
         private static List<string> ListOfMiningMethodContent = new List<string>();
         private const int CheckConnectionInterval = 1000;
 
-        private static string Certificate;
 
 
         #region Connection functions
@@ -39,7 +38,7 @@ namespace Xiropht_Mining_Pool.Network
         /// <returns></returns>
         public static async Task<bool> ConnectPoolToBlockchainNetworkAsync()
         {
-            Certificate = ClassUtils.GenerateCertificate();
+            
 
             ClassSeedNodeConnector?.DisconnectToSeed();
             ClassSeedNodeConnector?.Dispose();
@@ -143,7 +142,7 @@ namespace Xiropht_Mining_Pool.Network
         /// <summary>
         /// Listen packets received from the network of blockchain.
         /// </summary>
-        private static void ListenConnectionAsync()
+        private static async void ListenConnectionAsync()
         {
             LastPacketReceived = ClassUtility.GetCurrentDateInSecond();
 
@@ -157,15 +156,11 @@ namespace Xiropht_Mining_Pool.Network
             {
                 try
                 {
-                    if (!await LoginConnection())
-                    {
-                        IsConnected = false;
-                    }
                     while ((IsConnected && ClassSeedNodeConnector.ReturnStatus()) && !Program.Exit)
                     {
                         try
                         {
-                            string packet = await ClassSeedNodeConnector.ReceivePacketFromSeedNodeAsync(Certificate, false, true);
+                            string packet = await ClassSeedNodeConnector.ReceivePacketFromSeedNodeAsync(Program.Certificate, false, true);
 
                             if (packet.Contains("*"))
                             {
@@ -234,6 +229,10 @@ namespace Xiropht_Mining_Pool.Network
                 }
             });
             ThreadListenNetwork.Start();
+            if (!await LoginConnection())
+            {
+                IsConnected = false;
+            }
         }
 
         /// <summary>
@@ -498,12 +497,12 @@ namespace Xiropht_Mining_Pool.Network
         /// </summary>
         private static async Task<bool> LoginConnection()
         {
-            if (!await SendPacketToNetworkBlockchain(Certificate, false))
+            if (!await SendPacketToNetworkBlockchain(Program.Certificate, false))
             {
                 IsConnected = false;
                 return false;
             }
-            if (!await SendPacketToNetworkBlockchain(ClassConnectorSettingEnumeration.MinerLoginType + "|"+MiningPoolSetting.MiningPoolWalletAddress, true))
+            if (!await SendPacketToNetworkBlockchain(ClassConnectorSettingEnumeration.MinerLoginType + "|" + MiningPoolSetting.MiningPoolWalletAddress, true))
             {
                 IsConnected = false;
                 return false;
@@ -576,7 +575,7 @@ namespace Xiropht_Mining_Pool.Network
             }
             else
             {
-                if (!await ClassSeedNodeConnector.SendPacketToSeedNodeAsync(packet, Certificate, false, true))
+                if (!await ClassSeedNodeConnector.SendPacketToSeedNodeAsync(packet, Program.Certificate, false, true))
                 {
                     IsConnected = false;
                     return false;
