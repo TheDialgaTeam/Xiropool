@@ -329,8 +329,8 @@ namespace Xiropht_Mining_Pool.Mining
             {
                 if (MiningDifficultyStart > 0 && MiningDifficultyStart <= maxRange)
                 {
-                    float realDifficulty = maxRange / MiningDifficultyStart;
-                    float realJob = (float)Math.Round((maxRange / (realDifficulty / ClassUtility.RandomOperatorCalculation.Length)), 0);
+                    float realDifficulty = (maxRange / MiningDifficultyStart) * ClassUtility.RandomOperatorCalculation.Length;
+                    float realJob = (float)Math.Round((maxRange / realDifficulty), 0);
 
                     if (realJob != 0 && (realJob >= ClassMiningPoolGlobalStats.CurrentBlockJobMinRange && realJob <= ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange))
                     {
@@ -385,7 +385,7 @@ namespace Xiropht_Mining_Pool.Mining
             LastJobDateReceive = ClassUtility.GetCurrentDateInSecond();
             LastShareReceived = ClassUtility.GetCurrentDateInMilliSecond();
             TotalGoodShare = 0;
-            float currentMiningJobDifficultyTmp = (((maxRange / CurrentMiningJob) / maxRange) * 100) * CurrentMiningJob;
+            float currentMiningJobDifficultyTmp = CurrentMiningJob * ClassUtility.RandomOperatorCalculation.Length;
             if (currentMiningJobDifficultyTmp > 0)
             {
                 CurrentMiningJobDifficulty = (float)Math.Round(currentMiningJobDifficultyTmp, 0);
