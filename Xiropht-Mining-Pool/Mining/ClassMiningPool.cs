@@ -327,28 +327,53 @@ namespace Xiropht_Mining_Pool.Mining
             }
             else
             {
-                float realJob = (float)Math.Round((maxRange / (MiningDifficultyStart / ClassUtility.RandomOperatorCalculation.Length)), 0);
-                if (realJob != 0 && (realJob >= ClassMiningPoolGlobalStats.CurrentBlockJobMinRange && realJob <= ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange))
+                if (MiningDifficultyStart > 0 && MiningDifficultyStart <= maxRange)
                 {
-                    CurrentMiningJob = realJob;
-                    CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
-                    minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
-                    maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
+                    float realDifficulty = maxRange / MiningDifficultyStart;
+                    float realJob = (float)Math.Round((maxRange / (realDifficulty / ClassUtility.RandomOperatorCalculation.Length)), 0);
+
+                    if (realJob != 0 && (realJob >= ClassMiningPoolGlobalStats.CurrentBlockJobMinRange && realJob <= ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange))
+                    {
+                        CurrentMiningJob = realJob;
+                        CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
+                        minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
+                        maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
+                    }
+                    else
+                    {
+                        while (CurrentMiningJob == PreviousMiningJob || ListOfJob.Contains(CurrentMiningJob) || CurrentMiningJob < minRange || CurrentMiningJob > maxRange && CurrentMiningJob == 0)
+                        {
+                            if (realJob <= maxRange)
+                            {
+                                CurrentMiningJob = ClassUtility.GetRandomBetweenJob(minRange, realJob);
+                                CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
+                                minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
+                                maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
+                            }
+                            else
+                            {
+                                CurrentMiningJob = ClassUtility.GetRandomBetweenJob(minRange, realJob);
+                                CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
+                                minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
+                                maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
+                            }
+                        }
+                    }
                 }
                 else
                 {
                     while (CurrentMiningJob == PreviousMiningJob || ListOfJob.Contains(CurrentMiningJob) || CurrentMiningJob < minRange || CurrentMiningJob > maxRange && CurrentMiningJob == 0)
                     {
-                        if (realJob <= maxRange)
+                        if (CurrentHashEffort <= maxRange)
                         {
-                            CurrentMiningJob = ClassUtility.GetRandomBetweenJob(minRange, realJob);
+                            CurrentMiningJob = ClassUtility.GetRandomBetweenJob(minRange, CurrentHashEffort);
                             CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
                             minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
                             maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
                         }
                         else
                         {
-                            CurrentMiningJob = ClassUtility.GetRandomBetweenJob(minRange, realJob);
+                            CurrentMiningJob = ClassUtility.GetRandomBetweenJob(minRange, maxRange);
                             CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
                             minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
                             maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
@@ -360,8 +385,15 @@ namespace Xiropht_Mining_Pool.Mining
             LastJobDateReceive = ClassUtility.GetCurrentDateInSecond();
             LastShareReceived = ClassUtility.GetCurrentDateInMilliSecond();
             TotalGoodShare = 0;
-            CurrentMiningJobDifficulty = (float)Math.Round(((maxRange / CurrentMiningJob) * ClassUtility.RandomOperatorCalculation.Length), 0);
-
+            float currentMiningJobDifficultyTmp = (((maxRange / CurrentMiningJob) / maxRange) * 100) * CurrentMiningJob;
+            if (currentMiningJobDifficultyTmp > 0)
+            {
+                CurrentMiningJobDifficulty = (float)Math.Round(currentMiningJobDifficultyTmp, 0);
+            }
+            else
+            {
+                CurrentMiningJobDifficulty = maxRange;
+            }
             JObject jobRequest = new JObject
             {
                 ["type"] = ClassMiningPoolRequest.TypeJob,
