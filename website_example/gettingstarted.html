@@ -80,13 +80,14 @@
 		<div id="PoolMining" class="row center-block">
 			<div class="col-md-12 stats">
 				<h1 class="text-center">Mining Pool Instructions</h1>
-				<h4>Mining Pool Host Address: <strong>151.80.141.125</strong></h4>
+				<h4>Mining Pool Host Address: <strong><span id="miningPoolHost"></span></strong></h4>
+				<h4><strong>More the number of possibility selected is high, more the difficulty to found valid shares is easier.</strong></h4>
 				<div class="table-responsive">
 					<table class="table table-bordered" id="miningTable">
 						<thead>
 							<tr>
 								<th>Port:</th>
-								<th>Starting Difficulty:</th>
+								<th>Starting Number of Possibility:</th>
 							</tr>
 						</thead>
 						<tbody id="mining_rows">
@@ -230,7 +231,7 @@
 		}
 	}
 
-	urls = ['/js/jquery.min.js', '/js/bootstrap.min.js','/js/jquery-3.3.1.min.js'];
+	urls = ['/js/bootstrap.min.js','/js/jquery-3.3.1.min.js'];
 
 	loadScripts(urls, urls.length, function()
 	{
@@ -238,6 +239,8 @@
 		{
 			apiHost += "/";
 		}
+		document.getElementById("miningPoolHost").innerHTML = miningPoolHost;
+
 		GetPoolStats();
 		setInterval(GetPoolStats, 5000);
 		WebFontConfig = 

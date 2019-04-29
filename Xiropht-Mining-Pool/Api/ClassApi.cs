@@ -93,6 +93,8 @@ namespace Xiropht_Mining_Pool.Api
         /// </summary>
         public static void StopApiHttpServer()
         {
+            ClassLog.ConsoleWriteLog("Stop mining pool API HTTP..", ClassLogEnumeration.IndexPoolApiLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
+
             ListenApiHttpConnectionStatus = false;
             if (ThreadListenApiHttpConnection != null && (ThreadListenApiHttpConnection.IsAlive || ThreadListenApiHttpConnection != null))
             {
@@ -107,6 +109,8 @@ namespace Xiropht_Mining_Pool.Api
             {
 
             }
+            ClassLog.ConsoleWriteLog("Mining pool API HTTP stopped.", ClassLogEnumeration.IndexPoolApiLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
+
         }
     }
 

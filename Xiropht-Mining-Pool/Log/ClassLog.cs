@@ -210,26 +210,26 @@ namespace Xiropht_Mining_Pool.Log
         {
             LogCloseStreamWriter();
 
-            PoolGeneralErrorLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory+ LogPoolGeneralError), true, Encoding.UTF8, WriteLogBufferSize) { AutoFlush = true };
-            PoolGeneralLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory+ LogPoolGeneral), true, Encoding.UTF8, WriteLogBufferSize) { AutoFlush = true };
+            PoolGeneralErrorLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + LogPoolGeneralError), true, Encoding.UTF8, WriteLogBufferSize);
+            PoolGeneralLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + LogPoolGeneral), true, Encoding.UTF8, WriteLogBufferSize);
 
-            PoolFilteringErrorLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory+ LogPoolFilteringError), true, Encoding.UTF8, WriteLogBufferSize) { AutoFlush = true };
-            PoolFilteringLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory+ LogPoolFiltering), true, Encoding.UTF8, WriteLogBufferSize) { AutoFlush = true };
+            PoolFilteringErrorLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + LogPoolFilteringError), true, Encoding.UTF8, WriteLogBufferSize);
+            PoolFilteringLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + LogPoolFiltering), true, Encoding.UTF8, WriteLogBufferSize);
 
-            PoolMinerCheckStatsErrorLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory+ LogPoolMinerCheckStatsError), true, Encoding.UTF8, WriteLogBufferSize) { AutoFlush = true };
-            PoolMinerCheckStatsLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory+ LogPoolMinerCheckStats), true, Encoding.UTF8, WriteLogBufferSize) { AutoFlush = true };
+            PoolMinerCheckStatsErrorLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + LogPoolMinerCheckStatsError), true, Encoding.UTF8, WriteLogBufferSize);
+            PoolMinerCheckStatsLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + LogPoolMinerCheckStats), true, Encoding.UTF8, WriteLogBufferSize);
 
-            PoolMinerErrorLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory+ LogPoolMinerError), true, Encoding.UTF8, WriteLogBufferSize) { AutoFlush = true };
-            PoolMinerLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory+ LogPoolMiner), true, Encoding.UTF8, WriteLogBufferSize) { AutoFlush = true };
+            PoolMinerErrorLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + LogPoolMinerError), true, Encoding.UTF8, WriteLogBufferSize);
+            PoolMinerLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + LogPoolMiner), true, Encoding.UTF8, WriteLogBufferSize);
 
-            PoolPaymentErrorLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory+ LogPoolPaymentError), true, Encoding.UTF8, WriteLogBufferSize) { AutoFlush = true };
-            PoolPaymentLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory+ LogPoolPayment), true, Encoding.UTF8, WriteLogBufferSize) { AutoFlush = true };
+            PoolPaymentErrorLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + LogPoolPaymentError), true, Encoding.UTF8, WriteLogBufferSize);
+            PoolPaymentLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + LogPoolPayment), true, Encoding.UTF8, WriteLogBufferSize);
 
-            PoolWalletErrorLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory+ LogPoolWalletError), true, Encoding.UTF8, WriteLogBufferSize) { AutoFlush = true };
-            PoolWalletLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory+ LogPoolWallet), true, Encoding.UTF8, WriteLogBufferSize) { AutoFlush = true };
+            PoolWalletErrorLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + LogPoolWalletError), true, Encoding.UTF8, WriteLogBufferSize);
+            PoolWalletLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + LogPoolWallet), true, Encoding.UTF8, WriteLogBufferSize);
 
-            PoolApiErrorLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + LogPoolApiError), true, Encoding.UTF8, WriteLogBufferSize) { AutoFlush = true };
-            PoolApiLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + LogPoolApi), true, Encoding.UTF8, WriteLogBufferSize) { AutoFlush = true };
+            PoolApiErrorLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + LogPoolApiError), true, Encoding.UTF8, WriteLogBufferSize);
+            PoolApiLogWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + LogPoolApi), true, Encoding.UTF8, WriteLogBufferSize);
         }
 
         /// <summary>
@@ -322,7 +322,7 @@ namespace Xiropht_Mining_Pool.Log
                 ThreadAutoWriteLog.Abort();
                 GC.SuppressFinalize(ThreadAutoWriteLog);
             }
-            ThreadAutoWriteLog = new Thread(delegate ()
+            ThreadAutoWriteLog = new Thread(async delegate ()
             {
                 while(!Program.Exit)
                 {
@@ -342,10 +342,28 @@ namespace Xiropht_Mining_Pool.Log
                                 {
                                     foreach(var log in copyOfLog)
                                     {
-                                        WriteLog(log.Item2, log.Item1);
+                                        await WriteLogAsync(log.Item2, log.Item1);
+                                        if (Program.Exit)
+                                        {
+                                            break;
+                                        }
                                     }
                                 }
                                 copyOfLog.Clear();
+                                await PoolGeneralErrorLogWriter.FlushAsync();
+                                await PoolGeneralLogWriter.FlushAsync();
+                                await PoolFilteringErrorLogWriter.FlushAsync();
+                                await PoolFilteringLogWriter.FlushAsync();
+                                await PoolMinerCheckStatsErrorLogWriter.FlushAsync();
+                                await PoolMinerCheckStatsLogWriter.FlushAsync();
+                                await PoolMinerErrorLogWriter.FlushAsync();
+                                await PoolMinerLogWriter.FlushAsync();
+                                await PoolPaymentErrorLogWriter.FlushAsync();
+                                await PoolPaymentLogWriter.FlushAsync();
+                                await PoolWalletErrorLogWriter.FlushAsync();
+                                await PoolWalletLogWriter.FlushAsync();
+                                await PoolApiErrorLogWriter.FlushAsync();
+                                await PoolApiLogWriter.FlushAsync();
                             }
                         }
                     }
@@ -363,6 +381,7 @@ namespace Xiropht_Mining_Pool.Log
                     Thread.Sleep(MiningPoolSetting.MiningPoolWriteLogInterval);
                 }
             });
+            ThreadAutoWriteLog.Priority = ThreadPriority.Lowest;
             ThreadAutoWriteLog.Start();
         }
 
@@ -371,51 +390,51 @@ namespace Xiropht_Mining_Pool.Log
         /// </summary>
         /// <param name="text"></param>
         /// <param name="idLog"></param>
-        private static void WriteLog(string text, int idLog)
+        private static async Task WriteLogAsync(string text, int idLog)
         {
             switch (idLog)
             {
                 case ClassLogEnumeration.IndexPoolGeneralErrorLog:
-                    PoolGeneralErrorLogWriter.WriteLine(text);
+                    await PoolGeneralErrorLogWriter.WriteLineAsync(text);
                     break;
                 case ClassLogEnumeration.IndexPoolGeneralLog:
-                    PoolGeneralLogWriter.WriteLine(text);
+                    await PoolGeneralLogWriter.WriteLineAsync(text);
                     break;
                 case ClassLogEnumeration.IndexPoolFilteringErrorLog:
-                    PoolFilteringErrorLogWriter.WriteLine(text);
+                    await PoolFilteringErrorLogWriter.WriteLineAsync(text);
                     break;
                 case ClassLogEnumeration.IndexPoolFilteringLog:
-                    PoolFilteringLogWriter.WriteLine(text);
+                    await PoolFilteringLogWriter.WriteLineAsync(text);
                     break;
                 case ClassLogEnumeration.IndexPoolCheckStatsErrorLog:
-                    PoolMinerCheckStatsErrorLogWriter.WriteLine(text);
+                    await PoolMinerCheckStatsErrorLogWriter.WriteLineAsync(text);
                     break;
                 case ClassLogEnumeration.IndexPoolCheckStatsLog:
-                    PoolMinerCheckStatsLogWriter.WriteLine(text);
+                    await PoolMinerCheckStatsLogWriter.WriteLineAsync(text);
                     break;
                 case ClassLogEnumeration.IndexPoolMinerErrorLog:
-                    PoolMinerErrorLogWriter.WriteLine(text);
+                    await PoolMinerErrorLogWriter.WriteLineAsync(text);
                     break;
                 case ClassLogEnumeration.IndexPoolMinerLog:
-                    PoolMinerLogWriter.WriteLine(text);
+                    await PoolMinerLogWriter.WriteLineAsync(text);
                     break;
                 case ClassLogEnumeration.IndexPoolPaymentErrorLog:
-                    PoolPaymentErrorLogWriter.WriteLine(text);
+                    await PoolPaymentErrorLogWriter.WriteLineAsync(text);
                     break;
                 case ClassLogEnumeration.IndexPoolPaymentLog:
-                    PoolPaymentLogWriter.WriteLine(text);
+                    await PoolPaymentLogWriter.WriteLineAsync(text);
                     break;
                 case ClassLogEnumeration.IndexPoolWalletErrorLog:
-                    PoolWalletErrorLogWriter.WriteLine(text);
+                    await PoolWalletErrorLogWriter.WriteLineAsync(text);
                     break;
                 case ClassLogEnumeration.IndexPoolWalletLog:
-                    PoolWalletLogWriter.WriteLine(text);
+                    await PoolWalletLogWriter.WriteLineAsync(text);
                     break;
                 case ClassLogEnumeration.IndexPoolApiErrorLog:
-                    PoolApiErrorLogWriter.WriteLine(text);
+                    await PoolApiErrorLogWriter.WriteLineAsync(text);
                     break;
                 case ClassLogEnumeration.IndexPoolApiLog:
-                    PoolApiLogWriter.WriteLine(text);
+                    await PoolApiLogWriter.WriteLineAsync(text);
                     break;
             }
         }

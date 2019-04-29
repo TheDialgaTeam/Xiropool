@@ -240,7 +240,7 @@ namespace Xiropht_Mining_Pool.Utility
         /// <param name="keyCrypt"></param>
         /// <param name="keyByte"></param>
         /// <returns></returns>
-        public static async System.Threading.Tasks.Task<string> EncryptAesShareAsync(string text, string keyCrypt, byte[] keyByte, int size)
+        public static string EncryptAesShareAsync(string text, string keyCrypt, byte[] keyByte, int size)
         {
             using (var pdb = new PasswordDeriveBytes(keyCrypt, keyByte))
             {
@@ -252,11 +252,10 @@ namespace Xiropht_Mining_Pool.Utility
                         aes.KeySize = size;
                         aes.Key = pdb.GetBytes(aes.KeySize / 8);
                         aes.IV = pdb.GetBytes(aes.BlockSize / 8);
-                        using (CryptoStream cs = new CryptoStream(ms,
-                          aes.CreateEncryptor(), CryptoStreamMode.Write))
+                        using (CryptoStream cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write))
                         {
                             var textByte = Encoding.UTF8.GetBytes(text);
-                            await cs.WriteAsync(textByte, 0, textByte.Length);
+                            cs.Write(textByte, 0, textByte.Length);
                         }
                         return BitConverter.ToString(ms.ToArray());
                     }

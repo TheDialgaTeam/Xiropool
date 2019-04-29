@@ -193,23 +193,30 @@ namespace Xiropht_Mining_Pool
                                 }
                                 break;
                             case MiningPoolCommandLinesEnumeration.MiningPoolCommandLineExit:
-                                ClassLog.ConsoleWriteLog("Stop mining pool..", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
-                                ClassNetworkBlockchain.StopNetworkBlockchain();
                                 Exit = true;
-                                if (ListMiningPool.Count > 0)
+                                new Thread(delegate ()
                                 {
-                                    foreach(var miningPool in ListMiningPool)
+                                    ClassNetworkBlockchain.StopNetworkBlockchain();
+                                    if (ListMiningPool.Count > 0)
                                     {
-                                        miningPool.Value.StopMiningPool();
+                                        foreach (var miningPool in ListMiningPool)
+                                        {
+                                            miningPool.Value.StopMiningPool();
+                                        }
                                     }
-                                }
-                                ClassApi.StopApiHttpServer();
-                                ClassMinerStats.StopCheckMinerStats();
-                                ClassPayment.StopAutoPaymentSystem();
-                                ClassFilteringMiner.StopFileringMiner();
-                                ClassMiningPoolDatabase.StopAutoSaveMiningPoolDatabases();
-                                ClassLog.ConsoleWriteLog("Mining pool stopped.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleBlueLog, true);
-                                ClassLog.StopLogSystem();
+                                    ClassApi.StopApiHttpServer();
+                                    ClassMinerStats.StopCheckMinerStats();
+                                    ClassPayment.StopAutoPaymentSystem();
+                                    ClassFilteringMiner.StopFileringMiner();
+                                    ClassMiningPoolDatabase.StopAutoSaveMiningPoolDatabases();
+                                    ClassLog.ConsoleWriteLog("Mining pool stopped.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleBlueLog, true);
+                                    ClassLog.StopLogSystem();
+                                    if (ThreadMiningPoolCommandLines != null && (ThreadMiningPoolCommandLines.IsAlive || ThreadMiningPoolCommandLines != null))
+                                    {
+                                        ThreadMiningPoolCommandLines.Abort();
+                                        GC.SuppressFinalize(ThreadMiningPoolCommandLines);
+                                    }
+                                }).Start();
                                 break;
                         }
                     }
@@ -229,7 +236,7 @@ namespace Xiropht_Mining_Pool
         {
             AppDomain.CurrentDomain.UnhandledException += delegate (object sender, UnhandledExceptionEventArgs args2)
             {
-                var filePath = ClassUtility.ConvertPath(System.AppDomain.CurrentDomain.BaseDirectory+ UnexpectedExceptionFile);
+                var filePath = ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory+ UnexpectedExceptionFile);
                 var exception = (Exception)args2.ExceptionObject;
                 using (var writer = new StreamWriter(filePath, true))
                 {

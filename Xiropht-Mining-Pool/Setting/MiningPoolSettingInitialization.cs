@@ -12,9 +12,6 @@ namespace Xiropht_Mining_Pool.Setting
         public const string SettingMiningPoolWalletAddress = "MINING_POOL_WALLET_ADDRESS";
         public const string SettingMiningPoolPort = "MINING_POOL_PORT";
         public const string SettingMiningPoolApiPort = "MINING_POOL_API_PORT";
-        public const string SettingMiningPoolWhitelistIpApiAdmin = "MINING_POOL_WHITELIST_IP_API_ADMIN";
-        public const string SettingMiningPoolApiAdministrationPassword = "MINING_POOL_API_ADMINISTRATION_PASSWORD";
-        public const string SettingMiningPoolApiMaxKeepAliveSession = "MINING_POOL_API_MAX_KEEP_ALIVE_SESSION";
         public const string SettingMiningPoolEnableCheckMinerStats = "MINING_POOL_ENABLE_CHECK_MINER_STATS";
         public const string SettingMiningPoolEnableTrustedShare = "MINING_POOL_ENABLE_TRUSTED_SHARE";
         public const string SettingMiningPoolMinimumTrustedGoodShare = "MINING_POOL_MINIMUM_TRUSTED_GOOD_SHARE";
@@ -103,26 +100,6 @@ namespace Xiropht_Mining_Pool.Setting
                                                     break;
                                                 case MiningPoolSettingEnumeration.SettingMiningPoolApiPort:
                                                     MiningPoolSetting.MiningPoolApiPort = int.Parse(splitLine[1]);
-                                                    break;
-                                                case MiningPoolSettingEnumeration.SettingMiningPoolWhitelistIpApiAdmin:
-                                                    if (splitLine[1].Contains(";")) // Multiple ip.
-                                                    {
-                                                        var splitLineIp = splitLine[1].Split(new[] { ";" }, StringSplitOptions.None);
-                                                        foreach (var lineIp in splitLineIp)
-                                                        {
-                                                            MiningPoolSetting.MiningPoolWhilistApiAdmin.Add(lineIp);
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        MiningPoolSetting.MiningPoolWhilistApiAdmin.Add(splitLine[1]);
-                                                    }
-                                                    break;
-                                                case MiningPoolSettingEnumeration.SettingMiningPoolApiAdministrationPassword:
-                                                    MiningPoolSetting.MiningPoolApiAdminPassword = splitLine[1];
-                                                    break;
-                                                case MiningPoolSettingEnumeration.SettingMiningPoolApiMaxKeepAliveSession:
-                                                    MiningPoolSetting.MiningPoolApiAdminMaxKeepAliveSession = int.Parse(splitLine[1]);
                                                     break;
                                                 case MiningPoolSettingEnumeration.SettingMiningPoolEnableCheckMinerStats:
                                                     if (splitLine[1].ToLower() == "y")
@@ -309,18 +286,6 @@ namespace Xiropht_Mining_Pool.Setting
 
                 streamWriterConfigPool.WriteLine("// Mining pool api port.");
                 streamWriterConfigPool.WriteLine(MiningPoolSettingEnumeration.SettingMiningPoolApiPort + "=4040");
-                streamWriterConfigPool.WriteLine("");
-
-                streamWriterConfigPool.WriteLine("// List of ip authorized ip to access on the api administration, if you set any ip, everybody can submit a password for try to access on the administration.");
-                streamWriterConfigPool.WriteLine(MiningPoolSettingEnumeration.SettingMiningPoolWhitelistIpApiAdmin + "=127.0.0.1");
-                streamWriterConfigPool.WriteLine("");
-
-                streamWriterConfigPool.WriteLine("// Api password for access to the administration.");
-                streamWriterConfigPool.WriteLine(MiningPoolSettingEnumeration.SettingMiningPoolApiAdministrationPassword + "=Xiropht");
-                streamWriterConfigPool.WriteLine("");
-
-                streamWriterConfigPool.WriteLine("// The maximum of time to keep alive a session on the API administration.");
-                streamWriterConfigPool.WriteLine(MiningPoolSettingEnumeration.SettingMiningPoolApiMaxKeepAliveSession + "=600");
                 streamWriterConfigPool.WriteLine("");
                 streamWriterConfigPool.WriteLine("");
 

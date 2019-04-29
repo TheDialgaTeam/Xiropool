@@ -8,6 +8,7 @@
         /// </summary>
         public const string TypeSubmit = "submit";
         public const string TypeJob = "job";
+        public const string TypeJobDifficulty = "difficulty";
         public const string TypeBlock = "block";
         public const string TypeBlockTimestampCreate = "block_timestamp_create";
         public const string TypeBlockKey = "block_key";

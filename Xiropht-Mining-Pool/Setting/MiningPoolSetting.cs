@@ -25,21 +25,6 @@ namespace Xiropht_Mining_Pool.Setting
         /// </summary>
         public static int MiningPoolApiPort = 4040;
 
-        /// <summary>
-        /// List of ip authorized ip to access on the api administration, if you set any ip, everybody can submit a password for try to access on the administration.
-        /// </summary>
-        public static List<string> MiningPoolWhilistApiAdmin = new List<string>();
-
-        /// <summary>
-        /// Api password for access to the administration.
-        /// </summary>
-        public static string MiningPoolApiAdminPassword;
-
-        /// <summary>
-        /// The maximum of time for keep alive a session to the administration.
-        /// </summary>
-        public static int MiningPoolApiAdminMaxKeepAliveSession;
-
         #endregion
 
         #region Mining Settings
