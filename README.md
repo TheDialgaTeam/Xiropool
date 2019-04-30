@@ -53,7 +53,9 @@ Xiropht-Miner: https://github.com/XIROPHT/Xiropht-Miner
 -> Worker monitoring system.
 
 <h2>Improvements</h2>
+
 **Their is few things who require improvements:**
+
 
 -> Hashrate calculation estimations done by the pool.
 
