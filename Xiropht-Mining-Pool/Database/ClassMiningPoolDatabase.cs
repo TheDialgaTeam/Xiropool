@@ -130,7 +130,7 @@ namespace Xiropht_Mining_Pool.Database
                                 string line;
                                 while ((line = sr.ReadLine()) != null)
                                 {
-                                    var splitBlockFound = line.Replace(ClassMiningPoolDatabaseEnumeration.DatabasePoolListBlockFound, "");
+                                    var splitBlockFound = line;
                                     ClassMiningPoolGlobalStats.ListBlockFound.Add(ClassMiningPoolGlobalStats.ListBlockFound.Count, splitBlockFound);
                                 }
                             }
@@ -245,22 +245,16 @@ namespace Xiropht_Mining_Pool.Database
                     {
                         File.Create(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory+ PoolDatabaseFile)).Close();
                         int totalBlockFound = ClassMiningPoolGlobalStats.ListBlockFound.Count;
-                        using (var poolWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory+ PoolDatabaseFile), true, Encoding.UTF8, 8192) { AutoFlush = true })
+                        using (var poolWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + PoolDatabaseFile), true, Encoding.UTF8, 8192) { AutoFlush = true })
                         {
                             for (int i = 0; i < totalBlockFound; i++)
                             {
                                 if (i < totalBlockFound)
                                 {
-                                    if (i == totalBlockFound - 1)
-                                    {
-                                        poolWriter.Write(ClassMiningPoolGlobalStats.ListBlockFound[i]);
-                                    }
-                                    else
-                                    {
-                                        poolWriter.Write(ClassMiningPoolGlobalStats.ListBlockFound[i] + ";");
-                                    }
+                                    poolWriter.WriteLine(ClassMiningPoolGlobalStats.ListBlockFound[i]);
                                 }
                             }
+                            poolWriter.Flush();
                         }
                         ClassLog.ConsoleWriteLog("Auto save pool database: " + totalBlockFound + " total blocks found saved.", ClassLogEnumeration.IndexPoolGeneralLog);
                     }
