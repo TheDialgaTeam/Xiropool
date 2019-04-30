@@ -12,6 +12,7 @@ using Xiropht_Connector_All.Utils;
 using Xiropht_Mining_Pool.Log;
 using Xiropht_Mining_Pool.Miner;
 using Xiropht_Mining_Pool.Network;
+using Xiropht_Mining_Pool.Payment;
 using Xiropht_Mining_Pool.Setting;
 using Xiropht_Mining_Pool.Threading;
 using Xiropht_Mining_Pool.Utility;
@@ -582,7 +583,7 @@ namespace Xiropht_Mining_Pool.Mining
                     float totalJobDone = maxJobPossibility * totalSharePerSecond;
                     float maxRangeDoneInSecond = maxRangePossibility / totalSharePerSecond;
                     float miningEffortPourcent = (maxJobDoneInSecond / maxRangeDoneInSecond) * 100;
-                    float miningBestJob = (float)Math.Round((CurrentMiningJob * totalSharePerSecond) * miningEffortPourcent, 0);
+                    float miningBestJob = (float)Math.Round((CurrentMiningJobDifficulty * totalSharePerSecond) * miningEffortPourcent, 0);
 
                     #region calculation comments
                     //Console.WriteLine("Current Mining Job: " + CurrentMiningJob);
@@ -597,7 +598,7 @@ namespace Xiropht_Mining_Pool.Mining
                     //Console.WriteLine("Mining Best Job Difficulty to target: " + miningBestJob);
                     #endregion
 
-                    float estimatedHashrate = (TotalMiningScore / timeSpendConnected) * ((ClassUtility.RandomOperatorCalculation.Length * 2)); // Total math operator * 2 combinaison (normal & inverted math calculation)
+                    float estimatedHashrate = (TotalMiningScore / timeSpendConnected) * ((ClassUtility.RandomOperatorCalculation.Length * 2)) / 2; // Total math operator * 2 combinaison (normal & inverted math calculation)
                     if (estimatedHashrate != float.PositiveInfinity && estimatedHashrate != float.NegativeInfinity && !float.IsNaN(estimatedHashrate))
                     {
                         if (estimatedHashrate > 0)

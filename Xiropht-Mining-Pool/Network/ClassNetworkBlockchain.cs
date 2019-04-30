@@ -9,6 +9,7 @@ using Xiropht_Connector_All.Utils;
 using Xiropht_Mining_Pool.Log;
 using Xiropht_Mining_Pool.Miner;
 using Xiropht_Mining_Pool.Mining;
+using Xiropht_Mining_Pool.Payment;
 using Xiropht_Mining_Pool.Setting;
 using Xiropht_Mining_Pool.Threading;
 using Xiropht_Mining_Pool.Utility;
@@ -486,6 +487,8 @@ namespace Xiropht_Mining_Pool.Network
                         case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareUnlock:
                             ClassLog.ConsoleWriteLog("Block ID: "+packetSplit[2]+" has been successfully found and accepted by Blockchain !", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
                             ClassMiningPoolGlobalStats.ListBlockFound.Add(ClassMiningPoolGlobalStats.ListBlockFound.Count, int.Parse(packetSplit[2])+"|"+ClassUtility.GetCurrentDateInSecond());
+                            ClassPayment.ProceedMiningScoreReward(packetSplit[2]);
+
                             break;
                         case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareBad:
                             ClassLog.ConsoleWriteLog("Block ID: " + packetSplit[2] + " has been found by someone else before the pool or the share sent is invalid.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);

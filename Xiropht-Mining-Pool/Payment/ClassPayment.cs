@@ -49,7 +49,6 @@ namespace Xiropht_Mining_Pool.Payment
                                         {
                                             foreach (var minerStats in ClassMinerStats.DictionaryMinerStats)
                                             {
-
                                                 if (minerStats.Value.TotalBalance >= MiningPoolSetting.MiningPoolMinimumBalancePayment)
                                                 {
                                                     decimal minersBalanceBase = minerStats.Value.TotalBalance;
@@ -136,6 +135,7 @@ namespace Xiropht_Mining_Pool.Payment
         /// </summary>
         public static void ProceedMiningScoreReward(string blockId)
         {
+            ClassLog.ConsoleWriteLog("Proceed block reward from block found: " + blockId, ClassLogEnumeration.IndexPoolPaymentLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
             decimal blockReward = ClassConnectorSetting.ConstantBlockReward;
             if (MiningPoolSetting.MiningPoolFee > 0)
             {
@@ -159,7 +159,7 @@ namespace Xiropht_Mining_Pool.Payment
             {
                 if (minerStats.Value.TotalMiningScore > 0)
                 {
-                    decimal pourcentageOfReward = minerStats.Value.TotalMiningScore / totalMiningScore;
+                    decimal pourcentageOfReward = (minerStats.Value.TotalMiningScore / totalMiningScore) * 100;
                     decimal minerReward = ((blockReward * pourcentageOfReward) / 100);
                     ClassLog.ConsoleWriteLog("Miner "+minerStats.Key+" receive "+pourcentageOfReward+"%  of block ID: " + blockId + " amount: " + minerReward+ " "+ClassConnectorSetting.CoinNameMin, ClassLogEnumeration.IndexPoolPaymentLog);
                     minerStats.Value.TotalBalance += minerReward;

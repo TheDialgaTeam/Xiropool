@@ -337,7 +337,7 @@ namespace Xiropht_Mining_Pool.Api
                         }
                         break;
                     case ClassApiEnumeration.GetPoolBlockById:
-                        if (!int.TryParse(splitPacket[1], out var blockId))
+                        if (int.TryParse(splitPacket[1], out var blockId))
                         {
                             if (blockId > 0)
                             {

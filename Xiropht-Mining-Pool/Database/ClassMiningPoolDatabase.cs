@@ -130,23 +130,8 @@ namespace Xiropht_Mining_Pool.Database
                                 string line;
                                 while ((line = sr.ReadLine()) != null)
                                 {
-                                    if (line.StartsWith(ClassMiningPoolDatabaseEnumeration.DatabasePoolListBlockFound))
-                                    {
-                                        var splitBlockFound = line.Replace(ClassMiningPoolDatabaseEnumeration.DatabasePoolListBlockFound, "").Split(new[] { ";" }, StringSplitOptions.None);
-                                        foreach (var blockFound in splitBlockFound)
-                                        {
-                                            if (blockFound != null)
-                                            {
-                                                if (!string.IsNullOrEmpty(blockFound))
-                                                {
-                                                    if (int.TryParse(blockFound, out var blockId))
-                                                    {
-                                                        ClassMiningPoolGlobalStats.ListBlockFound.Add(ClassMiningPoolGlobalStats.ListBlockFound.Count, blockId+"|"+ClassUtility.GetCurrentDateInSecond());
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
+                                    var splitBlockFound = line.Replace(ClassMiningPoolDatabaseEnumeration.DatabasePoolListBlockFound, "");
+                                    ClassMiningPoolGlobalStats.ListBlockFound.Add(ClassMiningPoolGlobalStats.ListBlockFound.Count, splitBlockFound);
                                 }
                             }
                         }
@@ -334,16 +319,10 @@ namespace Xiropht_Mining_Pool.Database
                     {
                         if (i < totalBlockFound)
                         {
-                            if (i == totalBlockFound - 1)
-                            {
-                                poolWriter.Write(ClassMiningPoolGlobalStats.ListBlockFound[i]);
-                            }
-                            else
-                            {
-                                poolWriter.Write(ClassMiningPoolGlobalStats.ListBlockFound[i] + ";");
-                            }
+                            poolWriter.WriteLine(ClassMiningPoolGlobalStats.ListBlockFound[i]);
                         }
                     }
+                    poolWriter.Flush();
                 }
                 ClassLog.ConsoleWriteLog("Auto save pool database: " + totalBlockFound + " total blocks found saved.", ClassLogEnumeration.IndexPoolGeneralLog);
             }
