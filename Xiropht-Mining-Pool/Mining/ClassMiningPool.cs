@@ -531,7 +531,7 @@ namespace Xiropht_Mining_Pool.Mining
                         return ClassMiningPoolRequest.TypeResultShareDuplicate;
                     }
 
-                    TotalMiningScore += result;
+                    TotalMiningScore += CurrentMiningJobDifficulty;
                     return ClassMiningPoolRequest.TypeResultShareOk;
                 }
                 else
@@ -597,7 +597,7 @@ namespace Xiropht_Mining_Pool.Mining
                     //Console.WriteLine("Mining Best Job Difficulty to target: " + miningBestJob);
                     #endregion
 
-                    float estimatedHashrate = (TotalMiningScore / timeSpendConnected) * ((ClassUtility.RandomOperatorCalculation.Length * 2) * (ClassMiningPoolGlobalStats.CurrentRoundAesRound + 1)); // Total math operator * 2 combinaison (normal & inverted math calculation)
+                    float estimatedHashrate = (TotalMiningScore / timeSpendConnected) * ((ClassUtility.RandomOperatorCalculation.Length * 2)); // Total math operator * 2 combinaison (normal & inverted math calculation)
                     if (estimatedHashrate != float.PositiveInfinity && estimatedHashrate != float.NegativeInfinity && !float.IsNaN(estimatedHashrate))
                     {
                         if (estimatedHashrate > 0)
@@ -862,7 +862,7 @@ namespace Xiropht_Mining_Pool.Mining
                                                 break;
                                             case ClassMiningPoolRequest.TypeResultShareOk:
                                                 ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " trusted share accepted. Job: " + CurrentMiningJobDifficulty + "/" + ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange, ClassLogEnumeration.IndexPoolMinerLog);
-                                                ClassMinerStats.InsertGoodShareToMiner(MinerWalletAddress, CurrentMiningJob);
+                                                ClassMinerStats.InsertGoodShareToMiner(MinerWalletAddress, CurrentMiningJobDifficulty);
                                                 await CheckShareHashWithBlockIndicationAsync(result, mathCalculation, share, hash);
                                                 TotalGoodShare++;
                                                 TotalGoodShareDone++;
@@ -939,7 +939,7 @@ namespace Xiropht_Mining_Pool.Mining
                                                 }
 
                                                 ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " good share accepted. Job: " + CurrentMiningJobDifficulty + "/" + ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange, ClassLogEnumeration.IndexPoolMinerLog);
-                                                ClassMinerStats.InsertGoodShareToMiner(MinerWalletAddress, CurrentMiningJob);
+                                                ClassMinerStats.InsertGoodShareToMiner(MinerWalletAddress, CurrentMiningJobDifficulty);
                                                 TotalGoodShare++;
                                                 TotalGoodShareDone++;
                                                 break;
@@ -1004,7 +1004,7 @@ namespace Xiropht_Mining_Pool.Mining
                                             }
 
                                             ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " good share accepted. Job: " + CurrentMiningJobDifficulty + "/" + ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange, ClassLogEnumeration.IndexPoolMinerLog);
-                                            ClassMinerStats.InsertGoodShareToMiner(MinerWalletAddress, CurrentMiningJob);
+                                            ClassMinerStats.InsertGoodShareToMiner(MinerWalletAddress, CurrentMiningJobDifficulty);
                                             TotalGoodShare++;
                                             TotalGoodShareDone++;
                                             break;
