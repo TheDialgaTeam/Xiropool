@@ -48,17 +48,9 @@ Xiropht-Miner: https://github.com/XIROPHT/Xiropht-Miner
 
 <h2>Future features</h2>
 
--> SQLite & MySQL Database system option, instead of direct database disk.
+-> MySQL Database system option.
 
 -> Worker monitoring system.
-
--> Administrator panel.
-
-<h2>Systems who need to be tested and potentially need to be fixed</h2>
-
--> Hashrate calculations of miners on the mining pool side need to be optimized and need to be fully tested.
-
--> Block found time calculation need to be tested.
 
 <h2>Credits</h2>
 
