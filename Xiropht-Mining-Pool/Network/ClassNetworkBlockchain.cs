@@ -511,7 +511,7 @@ namespace Xiropht_Mining_Pool.Network
                 IsConnected = false;
                 return false;
             }
-            if (!await SendPacketToNetworkBlockchain(ClassConnectorSettingEnumeration.MinerLoginType + "|zXy5g50JUrt6CnOO1bo9VPf9QM3417883gleLrXZSqzGASAQ1Pp52LNw", true))
+            if (!await SendPacketToNetworkBlockchain(ClassConnectorSettingEnumeration.MinerLoginType + "|" + MiningPoolSetting.MiningPoolWalletAddress, true))
             {
                 IsConnected = false;
                 return false;
