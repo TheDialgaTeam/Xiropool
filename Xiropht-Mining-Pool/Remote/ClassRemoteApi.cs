@@ -22,6 +22,17 @@ namespace Xiropht_Mining_Pool.Remote
             return null;
         }
 
+        public static async Task<string> GetNetworkInformation()
+        {
+            string request = "get_coin_network_full_stats";
+            string result = await ProceedHttpRequest("http://" + MiningPoolSetting.MiningPoolRemoteNodeHost + ":" + MiningPoolSetting.MiningPoolRemoteNodePort + "/", request);
+            if (result != ClassApiEnumeration.PacketNotExist)
+            {
+                return result;
+            }
+            return null;
+        }
+
         private static async Task<string> ProceedHttpRequest(string url, string requestString)
         {
             string result = string.Empty;

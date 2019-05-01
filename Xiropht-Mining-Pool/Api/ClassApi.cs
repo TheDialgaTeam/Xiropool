@@ -478,10 +478,8 @@ namespace Xiropht_Mining_Pool.Api
                 {
                     case ClassApiEnumeration.GetPoolStats:
                         decimal networkHashrate = 0;
-                        if (decimal.Parse(ClassMiningPoolGlobalStats.CurrentBlockDifficulty) > 1)
-                        {
-                            networkHashrate = (decimal.Parse(ClassMiningPoolGlobalStats.CurrentBlockDifficulty) * ClassConnectorSetting.NETWORK_MINING_ACCURACY_EXPECTED) / 100;
-                        }
+                        var networkInformationObject = JObject.Parse(await ClassRemoteApi.GetNetworkInformation());
+                        networkHashrate = decimal.Parse(networkInformationObject["coin_network_hashrate"].ToString());
                         string lastBlockFoundDate = "0";
                         if (ClassMiningPoolGlobalStats.ListBlockFound.Count > 0)
                         {
@@ -555,6 +553,7 @@ namespace Xiropht_Mining_Pool.Api
                             {"pool_total_miner_connected", "" + ClassMiningPoolGlobalStats.TotalMinerConnected },
                             {"pool_total_worker_connected", "" + ClassMiningPoolGlobalStats.TotalWorkerConnected },
                             {"pool_total_payment", "" + ClassMinerStats.DictionaryPoolTransaction.Count },
+                            {"pool_total_paid", ClassMiningPoolGlobalStats.PoolTotalPaid.ToString("F"+ClassConnectorSetting.MaxDecimalPlace) },
                             {"pool_total_block_found", "" + ClassMiningPoolGlobalStats.ListBlockFound.Count },
                             {"pool_fee", ""+MiningPoolSetting.MiningPoolFee },
                             {"pool_last_block_found_date",  lastBlockFoundDate},

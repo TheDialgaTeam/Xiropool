@@ -169,9 +169,12 @@ namespace Xiropht_Mining_Pool.Database
                                             ClassMinerStats.DictionaryMinerTransaction.Add(splitTransactionLine[0], new List<string>() { splitTransactionLine[1] + "|" + splitTransactionLine[2] + "|" + splitTransactionLine[3] + "|" + splitTransactionLine[4]});
                                         }
                                         long dateSend = long.Parse(splitTransactionLine[4]);
+                                        decimal amountPaid = decimal.Parse(splitTransactionLine[2]);
+                                        decimal feePaid = decimal.Parse(splitTransactionLine[3]);
                                         string transactionInfo = splitTransactionLine[1] + "|" + splitTransactionLine[2] + "|" + splitTransactionLine[3] + "|" + splitTransactionLine[4];
                                         KeyValuePair<long, string> transactionKeyValuePair = new KeyValuePair<long, string>(dateSend, transactionInfo);
                                         ListTransactionPool.Add(transactionKeyValuePair);
+                                        ClassMiningPoolGlobalStats.PoolTotalPaid += (amountPaid + feePaid);
                                     }
                                 }
                                 if (ListTransactionPool.Count > 0)

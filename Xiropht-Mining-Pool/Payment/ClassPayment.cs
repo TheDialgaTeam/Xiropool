@@ -4,6 +4,7 @@ using Xiropht_Connector_All.RPC;
 using Xiropht_Connector_All.Setting;
 using Xiropht_Mining_Pool.Log;
 using Xiropht_Mining_Pool.Miner;
+using Xiropht_Mining_Pool.Mining;
 using Xiropht_Mining_Pool.RpcWallet;
 using Xiropht_Mining_Pool.Setting;
 using Xiropht_Mining_Pool.Utility;
@@ -66,6 +67,7 @@ namespace Xiropht_Mining_Pool.Payment
                                                                 case ClassRpcWalletCommand.SendTokenTransactionConfirmed:
                                                                     minerStats.Value.TotalBalance -= minersBalanceBase;
                                                                     minerStats.Value.TotalPaid += minersBalanceBase;
+                                                                    ClassMiningPoolGlobalStats.PoolTotalPaid += minersBalanceBase;
                                                                     ClassMinerStats.InsertTransactionPayment(minerStats.Key, resultPaymentSplit[1], minersBalance, dateSent);
                                                                     ClassLog.ConsoleWriteLog("Transaction sent to miner " + minerStats.Key + " is confirmed, transaction hash: " + resultPaymentSplit[1], ClassLogEnumeration.IndexPoolPaymentLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
                                                                     break;

@@ -12,6 +12,7 @@ namespace Xiropht_Mining_Pool.Mining
         public static int TotalBlockFound;
         public static decimal PoolCurrentBalance;
         public static decimal PoolPendingBalance;
+        public static decimal PoolTotalPaid;
         public static Dictionary<int, string> ListBlockFound = new Dictionary<int, string>();
 
         /// <summary>

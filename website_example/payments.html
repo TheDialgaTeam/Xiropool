@@ -78,6 +78,7 @@
 
 	<div class="paymentsStatHolder">
 		<span class="bg-primary">Total Payments: <span id="paymentsTotal"></span></span>
+		<span class="bg-primary">Total Paid: <span id="paymentsTotalPaid"></span> XIR</span>
 		<span class="bg-primary">Minimum amount to reach: <span id="paymentsMinimum"></span> XIR</span>
 	</div>
 
@@ -154,6 +155,7 @@
 					var data = JSON.parse(xmlHttp.responseText);
 					document.getElementById("paymentsTotal").innerHTML = data.pool_total_payment;
 					document.getElementById("paymentsMinimum").innerHTML = data.pool_minimum_payment;
+					document.getElementById("paymentsTotalPaid").innerHTML = data.pool_total_paid;
 					if (totalTransaction == 0)
 					{
 						totalTransaction = data.pool_total_payment;
