@@ -3,6 +3,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using Xiropht_Connector_All.Setting;
 
 namespace Xiropht_Mining_Pool.Utility
@@ -21,6 +22,16 @@ namespace Xiropht_Mining_Pool.Utility
                 path = path.Replace("\\", "/");
             }
             return path;
+        }
+
+        /// <summary>
+        /// Remove special characters
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static string RemoveSpecialCharacters(string str)
+        {
+            return Regex.Replace(str, "[^a-zA-Z0-9_.]+", "", RegexOptions.Compiled);
         }
 
         /// <summary>

@@ -748,10 +748,10 @@ namespace Xiropht_Mining_Pool.Mining
                                     {
                                         MiningDifficultyStart = customDifficulty;
                                         UseCustomDifficulty = true;
-                                        ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + splitMinerInfo[0] + " | Custom Difficulty: "+customDifficulty+" | Version: " + MinerVersion + ".", ClassLogEnumeration.IndexPoolMinerLog);
+                                        ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + ClassUtility.RemoveSpecialCharacters(splitMinerInfo[0]) + " | Custom Difficulty: "+customDifficulty+" | Version: " + MinerVersion + ".", ClassLogEnumeration.IndexPoolMinerLog);
 
                                     }
-                                    MinerWalletAddress = splitMinerInfo[0];
+                                    MinerWalletAddress = ClassUtility.RemoveSpecialCharacters(splitMinerInfo[0]);
                                     if (!ClassMinerStats.CheckMinerIsBannedByWalletAddress(MinerWalletAddress))
                                     {
                                         MinerVersion = packetJson[ClassMiningPoolRequest.SubmitVersion].ToString();
@@ -770,7 +770,7 @@ namespace Xiropht_Mining_Pool.Mining
                                 }
                                 else
                                 {
-                                    MinerWalletAddress = minerWalletAddressTmp;
+                                    MinerWalletAddress = ClassUtility.RemoveSpecialCharacters(minerWalletAddressTmp);
                                     if (!ClassMinerStats.CheckMinerIsBannedByWalletAddress(MinerWalletAddress))
                                     {
                                         MinerVersion = packetJson[ClassMiningPoolRequest.SubmitVersion].ToString();
