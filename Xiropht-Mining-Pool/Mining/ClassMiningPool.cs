@@ -752,56 +752,78 @@ namespace Xiropht_Mining_Pool.Mining
 
                                     }
                                     MinerWalletAddress = ClassUtility.RemoveSpecialCharacters(splitMinerInfo[0]);
-                                    if (!ClassMinerStats.DictionaryMinerStats.ContainsKey(MinerWalletAddress))
+                                    if (!ClassFilteringMiner.CheckMinerInvalidWalletAddress(MinerWalletAddress))
                                     {
-                                        if(!await ClassNetworkBlockchain.CheckWalletAddressExistAsync(MinerWalletAddress))
+                                        if (!ClassMinerStats.DictionaryMinerStats.ContainsKey(MinerWalletAddress))
                                         {
-                                            ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " is not valid.", ClassLogEnumeration.IndexPoolMinerErrorLog);
-                                            EndMinerConnection();
-                                            return;
+                                            if (!await ClassNetworkBlockchain.CheckWalletAddressExistAsync(MinerWalletAddress))
+                                            {
+                                                ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " is not valid.", ClassLogEnumeration.IndexPoolMinerErrorLog);
+                                                ClassFilteringMiner.InsertInvalidPacket(Ip);
+                                                ClassFilteringMiner.InsertInvalidWalletAddress(MinerWalletAddress, Ip);
+                                                EndMinerConnection();
+                                                return;
+                                            }
                                         }
-                                    }
-                                    if (!ClassMinerStats.CheckMinerIsBannedByWalletAddress(MinerWalletAddress))
-                                    {
-                                        MinerVersion = packetJson[ClassMiningPoolRequest.SubmitVersion].ToString();
-                                        IsLogged = true;
-                                        LoginDate = DateTimeOffset.Now.ToUnixTimeSeconds();
-                                        ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " | Version: " + MinerVersion + ".", ClassLogEnumeration.IndexPoolMinerLog);
-                                        ClassMinerStats.InsertMinerTcpObject(MinerWalletAddress, this);
-                                        await Task.Factory.StartNew(CalculateHashrate, CancellationToken.None, TaskCreationOptions.LongRunning, PriorityScheduler.Lowest).ConfigureAwait(false);
-                                        MiningPoolSendJobAsync(MiningDifficultyStart);
+                                        if (!ClassMinerStats.CheckMinerIsBannedByWalletAddress(MinerWalletAddress))
+                                        {
+                                            MinerVersion = packetJson[ClassMiningPoolRequest.SubmitVersion].ToString();
+                                            IsLogged = true;
+                                            LoginDate = DateTimeOffset.Now.ToUnixTimeSeconds();
+                                            ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " | Version: " + MinerVersion + ".", ClassLogEnumeration.IndexPoolMinerLog);
+                                            ClassMinerStats.InsertMinerTcpObject(MinerWalletAddress, this);
+                                            await Task.Factory.StartNew(CalculateHashrate, CancellationToken.None, TaskCreationOptions.LongRunning, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                            MiningPoolSendJobAsync(MiningDifficultyStart);
+                                        }
+                                        else
+                                        {
+                                            ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " | Version: " + MinerVersion + " is banned.", ClassLogEnumeration.IndexPoolMinerErrorLog);
+                                            EndMinerConnection();
+                                        }
                                     }
                                     else
                                     {
-                                        ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " | Version: " + MinerVersion + " is banned.", ClassLogEnumeration.IndexPoolMinerErrorLog);
+                                        ClassFilteringMiner.InsertInvalidPacket(Ip);
+                                        ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " | is not valid.", ClassLogEnumeration.IndexPoolMinerErrorLog);
                                         EndMinerConnection();
                                     }
                                 }
                                 else
                                 {
                                     MinerWalletAddress = ClassUtility.RemoveSpecialCharacters(minerWalletAddressTmp);
-                                    if (!ClassMinerStats.DictionaryMinerStats.ContainsKey(MinerWalletAddress))
+                                    if (!ClassFilteringMiner.CheckMinerInvalidWalletAddress(MinerWalletAddress))
                                     {
-                                        if (!await ClassNetworkBlockchain.CheckWalletAddressExistAsync(MinerWalletAddress))
+                                        if (!ClassMinerStats.DictionaryMinerStats.ContainsKey(MinerWalletAddress))
                                         {
-                                            ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " is not valid.", ClassLogEnumeration.IndexPoolMinerErrorLog);
-                                            EndMinerConnection();
-                                            return;
+                                            if (!await ClassNetworkBlockchain.CheckWalletAddressExistAsync(MinerWalletAddress))
+                                            {
+                                                ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " is not valid.", ClassLogEnumeration.IndexPoolMinerErrorLog);
+                                                EndMinerConnection();
+                                                ClassFilteringMiner.InsertInvalidPacket(Ip);
+                                                ClassFilteringMiner.InsertInvalidWalletAddress(MinerWalletAddress, Ip);
+                                                return;
+                                            }
                                         }
-                                    }
-                                    if (!ClassMinerStats.CheckMinerIsBannedByWalletAddress(MinerWalletAddress))
-                                    {
-                                        MinerVersion = packetJson[ClassMiningPoolRequest.SubmitVersion].ToString();
-                                        IsLogged = true;
-                                        LoginDate = DateTimeOffset.Now.ToUnixTimeSeconds();
-                                        ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " | Version: " + MinerVersion + ".", ClassLogEnumeration.IndexPoolMinerLog);
-                                        ClassMinerStats.InsertMinerTcpObject(MinerWalletAddress, this);
-                                        await Task.Factory.StartNew(CalculateHashrate, CancellationToken.None, TaskCreationOptions.LongRunning, PriorityScheduler.Lowest).ConfigureAwait(false);
-                                        MiningPoolSendJobAsync(MiningDifficultyStart);
+                                        if (!ClassMinerStats.CheckMinerIsBannedByWalletAddress(MinerWalletAddress))
+                                        {
+                                            MinerVersion = packetJson[ClassMiningPoolRequest.SubmitVersion].ToString();
+                                            IsLogged = true;
+                                            LoginDate = DateTimeOffset.Now.ToUnixTimeSeconds();
+                                            ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " | Version: " + MinerVersion + ".", ClassLogEnumeration.IndexPoolMinerLog);
+                                            ClassMinerStats.InsertMinerTcpObject(MinerWalletAddress, this);
+                                            await Task.Factory.StartNew(CalculateHashrate, CancellationToken.None, TaskCreationOptions.LongRunning, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                            MiningPoolSendJobAsync(MiningDifficultyStart);
+                                        }
+                                        else
+                                        {
+                                            ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " | Version: " + MinerVersion + " is banned.", ClassLogEnumeration.IndexPoolMinerErrorLog);
+                                            EndMinerConnection();
+                                        }
                                     }
                                     else
                                     {
-                                        ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " | Version: " + MinerVersion + " is banned.", ClassLogEnumeration.IndexPoolMinerErrorLog);
+                                        ClassFilteringMiner.InsertInvalidPacket(Ip);
+                                        ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " | is not valid.", ClassLogEnumeration.IndexPoolMinerErrorLog);
                                         EndMinerConnection();
                                     }
                                 }

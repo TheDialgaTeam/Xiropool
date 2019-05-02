@@ -23,6 +23,7 @@ namespace Xiropht_Mining_Pool.Miner
     public class ClassFilteringMiner
     {
         private static Dictionary<string, ClassFilteringObjectMiner> DictionaryFilteringObjectMiner = new Dictionary<string, ClassFilteringObjectMiner>();
+        private static Dictionary<string, string> DictionaryFilteringInvalidWalletAddress = new Dictionary<string, string>();
 
         private static Thread ThreadFilteringMiner;
         private static Thread ThreadCleanFilteringMiner;
@@ -190,6 +191,7 @@ namespace Xiropht_Mining_Pool.Miner
             return false;
         }
 
+
         /// <summary>
         /// Increment total amount of invalid packet from an IP.
         /// </summary>
@@ -250,6 +252,57 @@ namespace Xiropht_Mining_Pool.Miner
                 default:
                     ClassLog.ConsoleWriteLog("Warning " + MiningPoolSetting.MiningPoolLinkFirewallFilteringName + " not exist.", 2, 2, true);
                     break;
+            }
+        }
+
+
+        /// <summary>
+        /// Check if the wallet address was already checked previously
+        /// </summary>
+        /// <param name="walletAddress"></param>
+        /// <returns></returns>
+        public static bool CheckMinerInvalidWalletAddress(string walletAddress)
+        {
+            try
+            {
+                if (DictionaryFilteringInvalidWalletAddress.ContainsKey(walletAddress))
+                {
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Insert an invalid wallet address to the firewall.
+        /// </summary>
+        /// <param name="walletAddress"></param>
+        /// <param name="ip"></param>
+        public static void InsertInvalidWalletAddress(string walletAddress, string ip)
+        {
+            try
+            {
+                if (DictionaryFilteringInvalidWalletAddress.Count >= (int.MaxValue-100000)) // Just in case.
+                {
+                    DictionaryFilteringInvalidWalletAddress.Clear();
+                }
+                if (!DictionaryFilteringInvalidWalletAddress.ContainsKey(walletAddress))
+                {
+                    DictionaryFilteringInvalidWalletAddress.Add(walletAddress, ip);
+                    ClassLog.ConsoleWriteLog("Warning invalid wallet address: "+walletAddress+" from ip: "+ip+" insert to the cache.", 2, 2, true);
+                }
+                else
+                {
+                    ClassLog.ConsoleWriteLog("Warning invalid wallet address: " + walletAddress + " from ip: " + ip + " already inserted to the cache.", 2, 2, true);
+                }
+            }
+            catch
+            {
+
             }
         }
 
