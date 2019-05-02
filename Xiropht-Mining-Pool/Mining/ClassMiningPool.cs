@@ -752,6 +752,15 @@ namespace Xiropht_Mining_Pool.Mining
 
                                     }
                                     MinerWalletAddress = ClassUtility.RemoveSpecialCharacters(splitMinerInfo[0]);
+                                    if (!ClassMinerStats.DictionaryMinerStats.ContainsKey(MinerWalletAddress))
+                                    {
+                                        if(!await ClassNetworkBlockchain.CheckWalletAddressExistAsync(MinerWalletAddress))
+                                        {
+                                            ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " is not valid.", ClassLogEnumeration.IndexPoolMinerErrorLog);
+                                            EndMinerConnection();
+                                            return;
+                                        }
+                                    }
                                     if (!ClassMinerStats.CheckMinerIsBannedByWalletAddress(MinerWalletAddress))
                                     {
                                         MinerVersion = packetJson[ClassMiningPoolRequest.SubmitVersion].ToString();
@@ -771,6 +780,15 @@ namespace Xiropht_Mining_Pool.Mining
                                 else
                                 {
                                     MinerWalletAddress = ClassUtility.RemoveSpecialCharacters(minerWalletAddressTmp);
+                                    if (!ClassMinerStats.DictionaryMinerStats.ContainsKey(MinerWalletAddress))
+                                    {
+                                        if (!await ClassNetworkBlockchain.CheckWalletAddressExistAsync(MinerWalletAddress))
+                                        {
+                                            ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " is not valid.", ClassLogEnumeration.IndexPoolMinerErrorLog);
+                                            EndMinerConnection();
+                                            return;
+                                        }
+                                    }
                                     if (!ClassMinerStats.CheckMinerIsBannedByWalletAddress(MinerWalletAddress))
                                     {
                                         MinerVersion = packetJson[ClassMiningPoolRequest.SubmitVersion].ToString();

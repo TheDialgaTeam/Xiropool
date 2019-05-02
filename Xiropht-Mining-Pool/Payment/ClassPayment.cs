@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Xiropht_Connector_All.RPC;
 using Xiropht_Connector_All.Setting;
 using Xiropht_Mining_Pool.Log;
@@ -14,6 +15,7 @@ namespace Xiropht_Mining_Pool.Payment
     public class ClassPayment
     {
         public static bool PoolOnSendingTransaction;
+        private static bool PoolOnProceedBlockReward;
         private static Thread ThreadAutoPaymentSystem;
 
         /// <summary>
@@ -156,8 +158,17 @@ namespace Xiropht_Mining_Pool.Payment
         /// <summary>
         /// Proceed mining score done by miners
         /// </summary>
-        public static void ProceedMiningScoreReward(string blockId)
+        public static async void ProceedMiningScoreRewardAsync(string blockId)
         {
+            while(PoolOnProceedBlockReward)
+            {
+                await Task.Delay(100);
+                if (Program.Exit)
+                {
+                    break;
+                }
+            }
+            PoolOnProceedBlockReward = true;
             ClassLog.ConsoleWriteLog("Proceed block reward from block found: " + blockId, ClassLogEnumeration.IndexPoolPaymentLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
             decimal blockReward = ClassConnectorSetting.ConstantBlockReward;
             if (MiningPoolSetting.MiningPoolFee > 0)
@@ -189,6 +200,7 @@ namespace Xiropht_Mining_Pool.Payment
                     ClassMinerStats.DictionaryMinerStats[minerStats.Key].TotalMiningScore = 0;
                 }
             }
+            PoolOnProceedBlockReward = false;
         }
     }
 }

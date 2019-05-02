@@ -1,15 +1,19 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Xiropht_Connector_All.RPC;
 using Xiropht_Connector_All.Seed;
 using Xiropht_Connector_All.Setting;
 using Xiropht_Connector_All.SoloMining;
 using Xiropht_Connector_All.Utils;
+using Xiropht_Mining_Pool.Api;
 using Xiropht_Mining_Pool.Log;
 using Xiropht_Mining_Pool.Miner;
 using Xiropht_Mining_Pool.Mining;
 using Xiropht_Mining_Pool.Payment;
+using Xiropht_Mining_Pool.Remote;
 using Xiropht_Mining_Pool.Setting;
 using Xiropht_Mining_Pool.Threading;
 using Xiropht_Mining_Pool.Utility;
@@ -487,7 +491,7 @@ namespace Xiropht_Mining_Pool.Network
                         case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareUnlock:
                             ClassLog.ConsoleWriteLog("Block ID: "+packetSplit[2]+" has been successfully found and accepted by Blockchain !", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
                             ClassMiningPoolGlobalStats.ListBlockFound.Add(ClassMiningPoolGlobalStats.ListBlockFound.Count, int.Parse(packetSplit[2])+"|"+ClassUtility.GetCurrentDateInSecond());
-                            ClassPayment.ProceedMiningScoreReward(packetSplit[2]);
+                            ClassPayment.ProceedMiningScoreRewardAsync(packetSplit[2]);
 
                             break;
                         case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareBad:
@@ -594,6 +598,60 @@ namespace Xiropht_Mining_Pool.Network
 
         #endregion
 
+        #region Check packet functions
+
+        public static async Task<bool> CheckWalletAddressExistAsync(string walletAddress)
+        {
+            try
+            {
+
+                string request = ClassConnectorSettingEnumeration.WalletTokenType + "|" + ClassRpcWalletCommand.TokenCheckWalletAddressExist+"|"+walletAddress;
+                string result = await ClassRemoteApi.ProceedHttpRequest("http://" + ClassSeedNodeConnector.ReturnCurrentSeedNodeHost() + ":" + ClassConnectorSetting.SeedNodeTokenPort + "/", request);
+                if (result == string.Empty || result == ClassApiEnumeration.PacketNotExist)
+                {
+                    return false;
+                }
+                else
+                {
+                    JObject resultJson = JObject.Parse(result);
+                    if (resultJson.ContainsKey(ClassMiningPoolRequest.SubmitResult))
+                    {
+                        string resultCheckWalletAddress = resultJson[ClassMiningPoolRequest.SubmitResult].ToString();
+                        if (resultCheckWalletAddress.Contains("|"))
+                        {
+                            var splitResultCheckWalletAddress = resultCheckWalletAddress.Split(new[] { "|" }, StringSplitOptions.None);
+                            if (splitResultCheckWalletAddress[0] == ClassRpcWalletCommand.SendTokenCheckWalletAddressInvalid)
+                            {
+                                return false;
+                            }
+                            else if (splitResultCheckWalletAddress[0] == ClassRpcWalletCommand.SendTokenCheckWalletAddressValid)
+                            {
+                                return true;
+                            }
+                            else
+                            {
+                                return false;
+                            }
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        #endregion
 
     }
 }

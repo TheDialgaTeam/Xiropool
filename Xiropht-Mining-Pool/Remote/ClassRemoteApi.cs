@@ -33,7 +33,7 @@ namespace Xiropht_Mining_Pool.Remote
             return null;
         }
 
-        private static async Task<string> ProceedHttpRequest(string url, string requestString)
+        public static async Task<string> ProceedHttpRequest(string url, string requestString)
         {
             string result = string.Empty;
 
@@ -41,7 +41,7 @@ namespace Xiropht_Mining_Pool.Remote
             request.AutomaticDecompression = DecompressionMethods.GZip;
             request.ServicePoint.Expect100Continue = false;
             request.KeepAlive = false;
-            request.Timeout = 5000;
+            request.Timeout = 10000;
             request.UserAgent = ClassConnectorSetting.CoinName + " Mining Pool Tool - " + Assembly.GetExecutingAssembly().GetName().Version + "R";
             string responseContent = string.Empty;
             using (HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync())
