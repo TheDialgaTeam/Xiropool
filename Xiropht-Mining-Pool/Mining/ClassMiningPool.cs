@@ -598,7 +598,7 @@ namespace Xiropht_Mining_Pool.Mining
                     //Console.WriteLine("Mining Best Job Difficulty to target: " + miningBestJob);
                     #endregion
 
-                    float estimatedHashrate = (TotalMiningScore / timeSpendConnected) * ((ClassUtility.RandomOperatorCalculation.Length * 2)) / 2; // Total math operator * 2 combinaison (normal & inverted math calculation)
+                    float estimatedHashrate = ((TotalMiningScore / timeSpendConnected) * ((ClassUtility.RandomOperatorCalculation.Length * 2)) / 2) / 1.75f; // Total math operator * 2 combinaison (normal & inverted math calculation)
                     if (estimatedHashrate != float.PositiveInfinity && estimatedHashrate != float.NegativeInfinity && !float.IsNaN(estimatedHashrate))
                     {
                         if (estimatedHashrate > 0)
