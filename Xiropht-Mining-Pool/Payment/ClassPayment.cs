@@ -186,6 +186,7 @@ namespace Xiropht_Mining_Pool.Payment
                     decimal minerReward = ((blockReward * pourcentageOfReward) / 100);
                     ClassLog.ConsoleWriteLog("Miner "+minerStats.Key+" receive "+pourcentageOfReward+"%  of block ID: " + blockId + " amount: " + minerReward + " "+ClassConnectorSetting.CoinNameMin, ClassLogEnumeration.IndexPoolPaymentLog);
                     minerStats.Value.TotalBalance += minerReward;
+                    ClassMinerStats.DictionaryMinerStats[minerStats.Key].TotalMiningScore = 0;
                 }
             }
         }
