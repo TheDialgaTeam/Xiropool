@@ -96,6 +96,7 @@
 			<div><i class="fa fa-tachometer"></i> Blocks found every: <span id="PoolFoundBlockTime"></span></div>
 			<div>Total Payout(s) Done: <span id="PoolTotalPayoutDone"></span></div>
 			<div>Total Block(s) Found: <span id="PoolTotalBlockFound"></span></div>
+			<div>Mining Pool Tool version: <span id="MiningPoolToolVersion"></span></div>
 		</div>
 
 	</div>
@@ -230,6 +231,7 @@
 				document.getElementById("PoolHashrate").innerHTML = formatHashrate(data.pool_hashrate);
 				document.getElementById("TotalConnectedWorkers").innerHTML = data.pool_total_worker_connected;
 				document.getElementById("TotalConnectedMiners").innerHTML = data.pool_total_miner_connected;
+				document.getElementById("MiningPoolToolVersion").innerHTML = data.version;
 				if (data.pool_hashrate <= 0)
 				{
 					document.getElementById("PoolFoundBlockTime").innerHTML = "Infinity";
@@ -487,7 +489,7 @@
 					var transactionList = $('#payments_rows');
 					transactionList.append(rowTransaction);
 					previousSorting = "asc";
-					sortTable(1);
+					sortTable(0);
 				}
 			}
 		}
@@ -520,7 +522,7 @@
 					rowInsert.innerHTML = rowTransactionContent;
 					rowInsert.appendChild(rowTransaction);
 					previousSorting = "asc";
-					sortTable(1);
+					sortTable(0);
 				}
 			}
 		}
