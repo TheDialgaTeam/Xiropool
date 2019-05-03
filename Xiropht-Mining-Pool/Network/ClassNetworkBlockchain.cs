@@ -492,11 +492,12 @@ namespace Xiropht_Mining_Pool.Network
                             ClassLog.ConsoleWriteLog("Block ID: "+packetSplit[2]+" has been successfully found and accepted by Blockchain !", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
                             ClassMiningPoolGlobalStats.ListBlockFound.Add(ClassMiningPoolGlobalStats.ListBlockFound.Count, int.Parse(packetSplit[2])+"|"+ClassUtility.GetCurrentDateInSecond());
                             ClassPayment.ProceedMiningScoreRewardAsync(packetSplit[2]);
-
                             break;
                         case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareBad:
                             ClassLog.ConsoleWriteLog("Block ID: " + packetSplit[2] + " has been found by someone else before the pool or the share sent is invalid.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
-
+                            break;
+                        case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareAleady:
+                            ClassLog.ConsoleWriteLog("Block ID: " + packetSplit[2] + " is already found by someone else.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
                             break;
                     }
                     break;
@@ -643,7 +644,6 @@ namespace Xiropht_Mining_Pool.Network
                         return false;
                     }
                 }
-                return false;
             }
             catch
             {

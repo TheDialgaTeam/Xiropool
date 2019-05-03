@@ -98,10 +98,10 @@ namespace Xiropht_Mining_Pool.Database
                                                         {
                                                             ClassMinerStats.DictionaryMinerStats[minerWalletAddress].TotalBalance = decimal.Parse(minerInfo.Replace(ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalBalance, "").Replace(".", ","), NumberStyles.Currency, Program.GlobalCultureInfo);
                                                         }
-                                                        else if (minerInfo.StartsWith(ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalPaid))
+                                                        /*else if (minerInfo.StartsWith(ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalPaid))
                                                         {
                                                             ClassMinerStats.DictionaryMinerStats[minerWalletAddress].TotalPaid = decimal.Parse(minerInfo.Replace(ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalPaid, "").Replace(".", ","), NumberStyles.Currency, Program.GlobalCultureInfo);
-                                                        }
+                                                        }*/
                                                     }
                                                 }
                                             }
@@ -168,9 +168,14 @@ namespace Xiropht_Mining_Pool.Database
                                         {
                                             ClassMinerStats.DictionaryMinerTransaction.Add(splitTransactionLine[0], new List<string>() { splitTransactionLine[1] + "|" + splitTransactionLine[2] + "|" + splitTransactionLine[3] + "|" + splitTransactionLine[4]});
                                         }
+                                        if (!ClassMinerStats.DictionaryMinerStats.ContainsKey(splitTransactionLine[0]))
+                                        {
+                                            ClassMinerStats.DictionaryMinerStats.Add(splitTransactionLine[0], new ClassMinerStatsObject());
+                                        }
                                         long dateSend = long.Parse(splitTransactionLine[4]);
                                         decimal amountPaid = decimal.Parse(splitTransactionLine[2]);
                                         decimal feePaid = decimal.Parse(splitTransactionLine[3]);
+                                        ClassMinerStats.DictionaryMinerStats[splitTransactionLine[0]].TotalPaid += (amountPaid + feePaid);
                                         string transactionInfo = splitTransactionLine[1] + "|" + splitTransactionLine[2] + "|" + splitTransactionLine[3] + "|" + splitTransactionLine[4];
                                         KeyValuePair<long, string> transactionKeyValuePair = new KeyValuePair<long, string>(dateSend, transactionInfo);
                                         ListTransactionPool.Add(transactionKeyValuePair);
