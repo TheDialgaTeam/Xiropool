@@ -8,6 +8,7 @@ using Xiropht_Connector_All.Setting;
 
 namespace Xiropht_Mining_Pool.Utility
 {
+
     public class ClassUtility
     {
 

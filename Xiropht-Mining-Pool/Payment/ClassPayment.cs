@@ -15,7 +15,7 @@ namespace Xiropht_Mining_Pool.Payment
     public class ClassPayment
     {
         public static bool PoolOnSendingTransaction;
-        private static bool PoolOnProceedBlockReward;
+        public static bool PoolOnProceedBlockReward;
         private static Thread ThreadAutoPaymentSystem;
 
         /// <summary>
@@ -67,7 +67,10 @@ namespace Xiropht_Mining_Pool.Payment
                                                                     minersBalance = minersBalance - MiningPoolSetting.MiningPoolFeeTransactionPayment;
                                                                     ClassLog.ConsoleWriteLog("Attempt to send transaction of " + minersBalance + " " + ClassConnectorSetting.CoinNameMin + " to miner " + minerStats.Key, ClassLogEnumeration.IndexPoolPaymentLog);
                                                                     long dateSent = ClassUtility.GetCurrentDateInSecond();
-                                                                    string resultPayment = await ClassRpcWallet.SendTransaction(minerStats.Key, minersBalance.ToString("F" + ClassConnectorSetting.MaxDecimalPlace).Replace(",", "."));
+
+                                                                    
+
+                                                                    string resultPayment = await ClassRpcWallet.SendTransaction(minerStats.Key,  minersBalance.ToString("F" + ClassConnectorSetting.MaxDecimalPlace).Replace(",", "."));
                                                                     if (resultPayment != null)
                                                                     {
                                                                         var resultPaymentSplit = resultPayment.Split(new[] { "|" }, StringSplitOptions.None);
@@ -167,11 +170,13 @@ namespace Xiropht_Mining_Pool.Payment
         /// </summary>
         public static async void ProceedMiningScoreRewardAsync(string blockId)
         {
-            
-            while(PoolOnProceedBlockReward)
+            if (PoolOnProceedBlockReward)
+            {
+                ClassLog.ConsoleWriteLog("Waiting proceed previous block reward before to proceed reward block id: " + blockId + "..", ClassLogEnumeration.IndexPoolPaymentLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
+            }
+            while (PoolOnProceedBlockReward)
             {
                 await Task.Delay(100);
-                ClassLog.ConsoleWriteLog("Waiting proceed previous block reward before to proceed reward block id: " + blockId + "..", ClassLogEnumeration.IndexPoolPaymentLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
                 if (Program.Exit)
                 {
                     break;
@@ -179,10 +184,13 @@ namespace Xiropht_Mining_Pool.Payment
             }
 
             PoolOnProceedBlockReward = true;
+            if (PoolOnSendingTransaction)
+            {
+                ClassLog.ConsoleWriteLog("Waiting end of proceed payments before to proceed reward block id: " + blockId + "..", ClassLogEnumeration.IndexPoolPaymentLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
+            }
             while (PoolOnSendingTransaction)
             {
                 await Task.Delay(100);
-                ClassLog.ConsoleWriteLog("Waiting end of proceed payments before to proceed reward block id: "+blockId+"..", ClassLogEnumeration.IndexPoolPaymentLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
                 if (Program.Exit)
                 {
                     break;

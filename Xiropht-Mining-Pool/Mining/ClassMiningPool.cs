@@ -55,8 +55,11 @@ namespace Xiropht_Mining_Pool.Mining
                 {
                     try
                     {
-                        var client = await TcpListenerMiningPool.AcceptTcpClientAsync().ConfigureAwait(false);
-                        await HandleMiner(client).ConfigureAwait(false);
+                        await TcpListenerMiningPool.AcceptTcpClientAsync().ContinueWith(async clientTask =>
+                        {
+                            var client = await clientTask;
+                            await HandleMiner(client).ConfigureAwait(false);
+                        }).ConfigureAwait(false);
                     }
                     catch (Exception error)
                     {
@@ -103,7 +106,7 @@ namespace Xiropht_Mining_Pool.Mining
                     await Task.Delay(ClassUtility.GetRandomBetween(100, 500)); // Insert a delay.
                     await minerTcpObject.HandleIncomingMiner(MiningPoolPort, MiningPoolDifficultyStart);
                 }
-            }, CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, PriorityScheduler.Lowest).ConfigureAwait(false);
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, PriorityScheduler.Lowest).ConfigureAwait(false);
         }
     }
 

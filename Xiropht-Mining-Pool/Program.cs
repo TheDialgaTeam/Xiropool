@@ -193,30 +193,44 @@ namespace Xiropht_Mining_Pool
                                 }
                                 break;
                             case MiningPoolCommandLinesEnumeration.MiningPoolCommandLineExit:
-                                Exit = true;
-                                new Thread(delegate ()
+                                if (ClassPayment.PoolOnSendingTransaction)
                                 {
-                                    ClassNetworkBlockchain.StopNetworkBlockchain();
-                                    if (ListMiningPool.Count > 0)
+                                    ClassLog.ConsoleWriteLog("Can't close mining pool, the pool is currently on sending transaction(s).", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                                }
+                                else
+                                {
+                                    if (ClassPayment.PoolOnProceedBlockReward)
                                     {
-                                        foreach (var miningPool in ListMiningPool)
+                                        ClassLog.ConsoleWriteLog("Can't close mining pool, the pool is currently on proceed block reward(s).", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                                    }
+                                    else
+                                    {
+                                        Exit = true;
+                                        new Thread(delegate ()
                                         {
-                                            miningPool.Value.StopMiningPool();
-                                        }
+                                            ClassNetworkBlockchain.StopNetworkBlockchain();
+                                            if (ListMiningPool.Count > 0)
+                                            {
+                                                foreach (var miningPool in ListMiningPool)
+                                                {
+                                                    miningPool.Value.StopMiningPool();
+                                                }
+                                            }
+                                            ClassApi.StopApiHttpServer();
+                                            ClassMinerStats.StopCheckMinerStats();
+                                            ClassPayment.StopAutoPaymentSystem();
+                                            ClassFilteringMiner.StopFileringMiner();
+                                            ClassMiningPoolDatabase.StopAutoSaveMiningPoolDatabases();
+                                            ClassLog.ConsoleWriteLog("Mining pool stopped.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleBlueLog, true);
+                                            ClassLog.StopLogSystem();
+                                            if (ThreadMiningPoolCommandLines != null && (ThreadMiningPoolCommandLines.IsAlive || ThreadMiningPoolCommandLines != null))
+                                            {
+                                                ThreadMiningPoolCommandLines.Abort();
+                                                GC.SuppressFinalize(ThreadMiningPoolCommandLines);
+                                            }
+                                        }).Start();
                                     }
-                                    ClassApi.StopApiHttpServer();
-                                    ClassMinerStats.StopCheckMinerStats();
-                                    ClassPayment.StopAutoPaymentSystem();
-                                    ClassFilteringMiner.StopFileringMiner();
-                                    ClassMiningPoolDatabase.StopAutoSaveMiningPoolDatabases();
-                                    ClassLog.ConsoleWriteLog("Mining pool stopped.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleBlueLog, true);
-                                    ClassLog.StopLogSystem();
-                                    if (ThreadMiningPoolCommandLines != null && (ThreadMiningPoolCommandLines.IsAlive || ThreadMiningPoolCommandLines != null))
-                                    {
-                                        ThreadMiningPoolCommandLines.Abort();
-                                        GC.SuppressFinalize(ThreadMiningPoolCommandLines);
-                                    }
-                                }).Start();
+                                }
                                 break;
                         }
                     }
