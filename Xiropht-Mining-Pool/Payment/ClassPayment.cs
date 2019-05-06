@@ -50,7 +50,6 @@ namespace Xiropht_Mining_Pool.Payment
                                             {
                                                 ClassLog.ConsoleWriteLog("Start to proceed payments.", ClassLogEnumeration.IndexPoolPaymentLog);
 
-
                                                 if (ClassMinerStats.DictionaryMinerStats.Count > 0)
                                                 {
                                                     foreach (var minerStats in ClassMinerStats.DictionaryMinerStats)
@@ -68,10 +67,8 @@ namespace Xiropht_Mining_Pool.Payment
                                                                     ClassLog.ConsoleWriteLog("Attempt to send transaction of " + minersBalance + " " + ClassConnectorSetting.CoinNameMin + " to miner " + minerStats.Key, ClassLogEnumeration.IndexPoolPaymentLog);
                                                                     long dateSent = ClassUtility.GetCurrentDateInSecond();
 
-                                                                    
-
-                                                                    string resultPayment = await ClassRpcWallet.SendTransaction(minerStats.Key,  minersBalance.ToString("F" + ClassConnectorSetting.MaxDecimalPlace).Replace(",", "."));
-                                                                    if (resultPayment != null)
+                                                                    string resultPayment = await ClassRpcWallet.SendTransaction(minerStats.Key,  minersBalance);
+                                                                    if (resultPayment != string.Empty)
                                                                     {
                                                                         var resultPaymentSplit = resultPayment.Split(new[] { "|" }, StringSplitOptions.None);
                                                                         switch (resultPaymentSplit[0])
@@ -90,7 +87,7 @@ namespace Xiropht_Mining_Pool.Payment
                                                                     }
                                                                     else
                                                                     {
-                                                                        ClassLog.ConsoleWriteLog("No response from RPC Wallet to proceed payment to miner " + minerStats.Key, ClassLogEnumeration.IndexPoolPaymentErrorLog);
+                                                                        ClassLog.ConsoleWriteLog("No response from RPC Wallet to proceed payment to miner: " + minerStats.Key, ClassLogEnumeration.IndexPoolPaymentErrorLog);
                                                                     }
                                                                 }
                                                                 else
@@ -106,7 +103,6 @@ namespace Xiropht_Mining_Pool.Payment
                                                     }
                                                 }
 
-                                                PoolOnSendingTransaction = false;
 
                                                 ClassLog.ConsoleWriteLog("End to proceed payments.", ClassLogEnumeration.IndexPoolPaymentLog);
                                             }
@@ -114,11 +110,13 @@ namespace Xiropht_Mining_Pool.Payment
                                             {
                                                 ClassLog.ConsoleWriteLog("Can't proceed payment, cannot get current pool balance.", ClassLogEnumeration.IndexPoolPaymentErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
                                             }
+                                            PoolOnSendingTransaction = false;
                                         }
                                         else
                                         {
                                             ClassLog.ConsoleWriteLog("Pool currently on proceed block reward, payments will are launch after.", ClassLogEnumeration.IndexPoolPaymentLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
                                         }
+
                                     }
                                     catch(Exception error)
                                     {
@@ -229,6 +227,8 @@ namespace Xiropht_Mining_Pool.Payment
                 }
             }
             PoolOnProceedBlockReward = false;
+            ClassLog.ConsoleWriteLog("Proceed block reward from block found: " + blockId +" done.", ClassLogEnumeration.IndexPoolPaymentLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
+
         }
     }
 }

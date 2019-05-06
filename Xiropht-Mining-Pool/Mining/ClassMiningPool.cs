@@ -764,6 +764,12 @@ namespace Xiropht_Mining_Pool.Mining
                                                 ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " is not valid.", ClassLogEnumeration.IndexPoolMinerErrorLog);
                                                 ClassFilteringMiner.InsertInvalidPacket(Ip);
                                                 ClassFilteringMiner.InsertInvalidWalletAddress(MinerWalletAddress, Ip);
+                                                JObject jsonWrongLoginPacket = new JObject
+                                                {
+                                                    { "type", ClassMiningPoolRequest.TypeLogin },
+                                                    { ClassMiningPoolRequest.TypeLoginWrong, "wrong wallet address." }
+                                                };
+                                                await SendPacketToMiner(jsonWrongLoginPacket.ToString(Formatting.None));
                                                 EndMinerConnection();
                                                 return;
                                             }
@@ -775,6 +781,12 @@ namespace Xiropht_Mining_Pool.Mining
                                             LoginDate = DateTimeOffset.Now.ToUnixTimeSeconds();
                                             ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " | Version: " + MinerVersion + ".", ClassLogEnumeration.IndexPoolMinerLog);
                                             ClassMinerStats.InsertMinerTcpObject(MinerWalletAddress, this);
+                                            JObject jsonLoginOkPacket = new JObject
+                                            {
+                                                { "type", ClassMiningPoolRequest.TypeLogin },
+                                                { ClassMiningPoolRequest.TypeLoginOk, "login accepted." }
+                                            };
+                                            await SendPacketToMiner(jsonLoginOkPacket.ToString(Formatting.None));
                                             await Task.Factory.StartNew(CalculateHashrate, CancellationToken.None, TaskCreationOptions.LongRunning, PriorityScheduler.Lowest).ConfigureAwait(false);
                                             MiningPoolSendJobAsync(MiningDifficultyStart);
                                         }
@@ -786,8 +798,16 @@ namespace Xiropht_Mining_Pool.Mining
                                     }
                                     else
                                     {
-                                        ClassFilteringMiner.InsertInvalidPacket(Ip);
+
                                         ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " | is not valid.", ClassLogEnumeration.IndexPoolMinerErrorLog);
+                                        ClassFilteringMiner.InsertInvalidPacket(Ip);
+                                        ClassFilteringMiner.InsertInvalidWalletAddress(MinerWalletAddress, Ip);
+                                        JObject jsonWrongLoginPacket = new JObject
+                                        {
+                                            { "type", ClassMiningPoolRequest.TypeLogin },
+                                            { ClassMiningPoolRequest.TypeLoginWrong, "wrong wallet address." }
+                                        };
+                                        await SendPacketToMiner(jsonWrongLoginPacket.ToString(Formatting.None));
                                         EndMinerConnection();
                                     }
                                 }
@@ -804,6 +824,13 @@ namespace Xiropht_Mining_Pool.Mining
                                                 EndMinerConnection();
                                                 ClassFilteringMiner.InsertInvalidPacket(Ip);
                                                 ClassFilteringMiner.InsertInvalidWalletAddress(MinerWalletAddress, Ip);
+                                                JObject jsonWrongLoginPacket = new JObject
+                                                {
+                                                    { "type", ClassMiningPoolRequest.TypeLogin },
+                                                    { ClassMiningPoolRequest.TypeLoginWrong, "wrong wallet address." }
+                                                };
+                                                await SendPacketToMiner(jsonWrongLoginPacket.ToString(Formatting.None));
+                                                EndMinerConnection();
                                                 return;
                                             }
                                         }
@@ -813,6 +840,12 @@ namespace Xiropht_Mining_Pool.Mining
                                             IsLogged = true;
                                             LoginDate = DateTimeOffset.Now.ToUnixTimeSeconds();
                                             ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " | Version: " + MinerVersion + ".", ClassLogEnumeration.IndexPoolMinerLog);
+                                            JObject jsonLoginOkPacket = new JObject
+                                            {
+                                                { "type", ClassMiningPoolRequest.TypeLogin },
+                                                { ClassMiningPoolRequest.TypeLoginOk, "login accepted." }
+                                            };
+                                            await SendPacketToMiner(jsonLoginOkPacket.ToString(Formatting.None));
                                             ClassMinerStats.InsertMinerTcpObject(MinerWalletAddress, this);
                                             await Task.Factory.StartNew(CalculateHashrate, CancellationToken.None, TaskCreationOptions.LongRunning, PriorityScheduler.Lowest).ConfigureAwait(false);
                                             MiningPoolSendJobAsync(MiningDifficultyStart);
@@ -826,7 +859,13 @@ namespace Xiropht_Mining_Pool.Mining
                                     else
                                     {
                                         ClassFilteringMiner.InsertInvalidPacket(Ip);
-                                        ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " login packet received - Wallet Address: " + MinerWalletAddress + " | is not valid.", ClassLogEnumeration.IndexPoolMinerErrorLog);
+                                        ClassFilteringMiner.InsertInvalidWalletAddress(MinerWalletAddress, Ip);
+                                        JObject jsonWrongLoginPacket = new JObject
+                                        {
+                                            { "type", ClassMiningPoolRequest.TypeLogin },
+                                            { ClassMiningPoolRequest.TypeLoginWrong, "wrong wallet address." }
+                                        };
+                                        await SendPacketToMiner(jsonWrongLoginPacket.ToString(Formatting.None));
                                         EndMinerConnection();
                                     }
                                 }

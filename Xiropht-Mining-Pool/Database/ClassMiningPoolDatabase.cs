@@ -98,10 +98,6 @@ namespace Xiropht_Mining_Pool.Database
                                                         {
                                                             ClassMinerStats.DictionaryMinerStats[minerWalletAddress].TotalBalance = decimal.Parse(minerInfo.Replace(ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalBalance, "").Replace(".", ","), NumberStyles.Currency, Program.GlobalCultureInfo);
                                                         }
-                                                        /*else if (minerInfo.StartsWith(ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalPaid))
-                                                        {
-                                                            ClassMinerStats.DictionaryMinerStats[minerWalletAddress].TotalPaid = decimal.Parse(minerInfo.Replace(ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalPaid, "").Replace(".", ","), NumberStyles.Currency, Program.GlobalCultureInfo);
-                                                        }*/
                                                     }
                                                 }
                                             }

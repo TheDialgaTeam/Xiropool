@@ -58,7 +58,7 @@ namespace Xiropht_Mining_Pool.RpcWallet
         /// </summary>
         /// <param name="walletAddressTarget"></param>
         /// <returns></returns>
-        public static async Task<string> SendTransaction(string walletAddressTarget, string amount, bool anonymous = false)
+        public static async Task<string> SendTransaction(string walletAddressTarget, decimal amount, bool anonymous = false)
         {
             ClassLog.ConsoleWriteLog("Try to send a transaction to wallet address target: "+walletAddressTarget+" of amount: "+amount+" "+ClassConnectorSetting.CoinNameMin, ClassLogEnumeration.IndexPoolWalletLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
             try
@@ -79,14 +79,14 @@ namespace Xiropht_Mining_Pool.RpcWallet
                 }
                 else
                 {
-                    return null;
+                    return string.Empty;
                 }
             }
             catch (Exception error)
             {
-                ClassLog.ConsoleWriteLog("Update current pool balance failed, exception error: " + error.Message, ClassLogEnumeration.IndexPoolWalletErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                ClassLog.ConsoleWriteLog("Send transaction failed, exception error: " + error.Message, ClassLogEnumeration.IndexPoolWalletErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
             }
-            return null;
+            return string.Empty;
         }
 
         private static async Task<string> ProceedHttpRequest(string url, string requestString)

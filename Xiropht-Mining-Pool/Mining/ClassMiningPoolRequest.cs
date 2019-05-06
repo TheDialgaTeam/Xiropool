@@ -18,7 +18,6 @@
         public const string TypeJobMiningMethodAesSize = "aes_size";
         public const string TypeJobMiningMethodAesKey = "aes_key";
         public const string TypeJobMiningMethodXorKey = "xor_key";
-
         public const string TypeKeepAlive = "keep-alive";
 
 
@@ -41,6 +40,8 @@
         /// Submitted data from miner according to login type.
         /// </summary>
         public const string TypeLogin = "login";
+        public const string TypeLoginOk = "login-ok";
+        public const string TypeLoginWrong = "wrong";
         public const string SubmitWalletAddress = "walletaddress";
         public const string SubmitVersion = "version";
 

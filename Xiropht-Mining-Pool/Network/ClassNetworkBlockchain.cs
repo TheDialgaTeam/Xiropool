@@ -491,7 +491,7 @@ namespace Xiropht_Mining_Pool.Network
                         case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareUnlock:
                             ClassLog.ConsoleWriteLog("Block ID: "+packetSplit[2]+" has been successfully found and accepted by Blockchain !", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
                             ClassMiningPoolGlobalStats.ListBlockFound.Add(ClassMiningPoolGlobalStats.ListBlockFound.Count, int.Parse(packetSplit[2])+"|"+ClassUtility.GetCurrentDateInSecond());
-                            ClassPayment.ProceedMiningScoreRewardAsync(packetSplit[2]);
+                            await Task.Factory.StartNew(() => ClassPayment.ProceedMiningScoreRewardAsync(packetSplit[2]), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Current).ConfigureAwait(false);
                             break;
                         case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareBad:
                             ClassLog.ConsoleWriteLog("Block ID: " + packetSplit[2] + " has been found by someone else before the pool or the share sent is invalid.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
