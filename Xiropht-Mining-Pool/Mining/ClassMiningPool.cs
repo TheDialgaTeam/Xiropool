@@ -440,7 +440,7 @@ namespace Xiropht_Mining_Pool.Mining
         /// <param name="share"></param>
         /// <param name="hash"></param>
         /// <returns></returns>
-        private async Task<string> CheckMinerShare(float result, string mathCalculation, string share, string hash, bool trustedShare)
+        private string CheckMinerShare(float result, string mathCalculation, string share, string hash, bool trustedShare)
         {
             TotalShareReceived++;
             if (hash != ClassMiningPoolGlobalStats.CurrentBlockIndication)
@@ -527,7 +527,7 @@ namespace Xiropht_Mining_Pool.Mining
 
                     if (hash == ClassMiningPoolGlobalStats.CurrentBlockIndication)
                     {
-                        await CheckShareHashWithBlockIndicationAsync(result, mathCalculation, share, hash).ConfigureAwait(false);
+                        CheckShareHashWithBlockIndicationAsync(result, mathCalculation, share, hash);
                     }
                     try
                     {
@@ -569,9 +569,9 @@ namespace Xiropht_Mining_Pool.Mining
         /// <param name="share"></param>
         /// <param name="hash"></param>
         /// <returns></returns>
-        private async Task CheckShareHashWithBlockIndicationAsync(float result, string mathCalculation, string share, string hash)
+        private async void CheckShareHashWithBlockIndicationAsync(float result, string mathCalculation, string share, string hash)
         {
-            ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " seems to have found the block " + ClassMiningPoolGlobalStats.CurrentBlockId + ", waiting confirmation.", ClassLogEnumeration.IndexPoolMinerLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
+            ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " seems to have found the block " + ClassMiningPoolGlobalStats.CurrentBlockId + ", waiting confirmation.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
             await Task.Factory.StartNew(() => ClassNetworkBlockchain.SendPacketBlockFound(share, result, mathCalculation, hash), CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, PriorityScheduler.AboveNormal).ConfigureAwait(false);
         }
 
@@ -620,19 +620,28 @@ namespace Xiropht_Mining_Pool.Mining
                         }
                     }
 
-                    CurrentHashEffort = miningBestJob;
-                    if (!UseCustomDifficulty || totalSharePerSecond > 10 || (miningBestJob > CurrentMiningJob * 10)) // Change the difficulty if the miner don't use a custom difficulty or send too much share per second for prevent flood and overloading.
+                    if (miningBestJob > ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange)
                     {
-                        UseCustomDifficulty = false;
-                        if (miningBestJob * 10 < CurrentMiningJob)
+                        ClassMinerStats.InsertInvalidShareToMiner(MinerWalletAddress);
+                        EndMinerConnection();
+                    }
+                    else
+                    {
+                        CurrentHashEffort = miningBestJob;
+
+                        if (!UseCustomDifficulty || totalSharePerSecond > 5 || (miningBestJob > CurrentMiningJob * 5)) // Change the difficulty if the miner don't use a custom difficulty or send too much share per second for prevent flood and overloading.
                         {
-                            MiningPoolSendJobAsync(miningBestJob);
-                        }
-                        else
-                        {
-                            if (miningBestJob > CurrentMiningJob * 10)
+                            UseCustomDifficulty = false;
+                            if (miningBestJob * 5 < CurrentMiningJob)
                             {
                                 MiningPoolSendJobAsync(miningBestJob);
+                            }
+                            else
+                            {
+                                if (miningBestJob > CurrentMiningJob * 5)
+                                {
+                                    MiningPoolSendJobAsync(miningBestJob);
+                                }
                             }
                         }
                     }
@@ -908,7 +917,7 @@ namespace Xiropht_Mining_Pool.Mining
                                 {
                                     if (ClassMinerStats.CheckMinerIsTrusted(MinerWalletAddress))
                                     {
-                                        switch (await CheckMinerShare(result, mathCalculation, share, hash, true))
+                                        switch (CheckMinerShare(result, mathCalculation, share, hash, true))
                                         {
                                             case ClassMiningPoolRequest.TypeResultShareInvalid:
 
@@ -956,7 +965,7 @@ namespace Xiropht_Mining_Pool.Mining
                                             case ClassMiningPoolRequest.TypeResultShareOk:
                                                 ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " trusted share accepted. Job: " + CurrentMiningJobDifficulty + "/" + ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange, ClassLogEnumeration.IndexPoolMinerLog);
                                                 ClassMinerStats.InsertGoodShareToMiner(MinerWalletAddress, CurrentMiningJobDifficulty);
-                                                await CheckShareHashWithBlockIndicationAsync(result, mathCalculation, share, hash);
+                                                CheckShareHashWithBlockIndicationAsync(result, mathCalculation, share, hash);
                                                 TotalGoodShare++;
                                                 TotalGoodShareDone++;
 
@@ -975,7 +984,7 @@ namespace Xiropht_Mining_Pool.Mining
                                     }
                                     else
                                     {
-                                        switch (await CheckMinerShare(result, mathCalculation, share, hash, false))
+                                        switch (CheckMinerShare(result, mathCalculation, share, hash, false))
                                         {
                                             case ClassMiningPoolRequest.TypeResultShareInvalid:
 
@@ -1041,7 +1050,7 @@ namespace Xiropht_Mining_Pool.Mining
                                 }
                                 else
                                 {
-                                    switch (await CheckMinerShare(result, mathCalculation, share, hash, false))
+                                    switch (CheckMinerShare(result, mathCalculation, share, hash, false))
                                     {
                                         case ClassMiningPoolRequest.TypeResultShareInvalid:
                                             ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " send a invalid share.", ClassLogEnumeration.IndexPoolMinerErrorLog);

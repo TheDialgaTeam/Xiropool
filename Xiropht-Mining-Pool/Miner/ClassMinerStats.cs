@@ -375,12 +375,16 @@ namespace Xiropht_Mining_Pool.Miner
                 {
                     DictionaryMinerStats[walletAddress].TotalInvalidShare += 0.5f; // Duplicate share are take in count has a half invalid share.
                 }
+                DictionaryMinerStats[walletAddress].IsTrusted = false;
+
             }
             else
             {
                 try
                 {
                     DictionaryMinerStats.Add(walletAddress, new ClassMinerStatsObject() { TotalInvalidShare = 1 });
+                    DictionaryMinerStats[walletAddress].IsTrusted = false;
+
                 }
                 catch
                 {
