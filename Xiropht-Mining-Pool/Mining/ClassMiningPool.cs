@@ -243,7 +243,10 @@ namespace Xiropht_Mining_Pool.Mining
             {
                 ListOfJob.Clear();
             }
-
+            if (MiningDifficultyStart > maxRange)
+            {
+                MiningDifficultyStart = maxRange;
+            }
             if (!UseCustomDifficulty)
             {
                 if (jobTarget != 0 && (jobTarget >= ClassMiningPoolGlobalStats.CurrentBlockJobMinRange && jobTarget <= ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange))
@@ -370,7 +373,7 @@ namespace Xiropht_Mining_Pool.Mining
                     {
                         if (CurrentHashEffort <= maxRange)
                         {
-                            CurrentMiningJob = ClassUtility.GetRandomBetweenJob(minRange, CurrentHashEffort);
+                            CurrentMiningJob = ClassUtility.GetRandomBetweenJob(minRange, maxRange);
                             CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
                             minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
                             maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
@@ -468,7 +471,14 @@ namespace Xiropht_Mining_Pool.Mining
             {
                 if (float.Parse(splitMathCalculation[2]) >= ClassMiningPoolGlobalStats.CurrentBlockJobMinRange && float.Parse(splitMathCalculation[2]) <= ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange)
                 {
-
+                    if (result > ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange)
+                    {
+                        return ClassMiningPoolRequest.TypeResultShareInvalid;
+                    }
+                    if (result < ClassMiningPoolGlobalStats.CurrentBlockJobMinRange)
+                    {
+                        return ClassMiningPoolRequest.TypeResultShareInvalid;
+                    }
                     if (ClassUtility.ComputeCalculation(splitMathCalculation[0], splitMathCalculation[1], splitMathCalculation[2]) != result)
                     {
                         return ClassMiningPoolRequest.TypeResultShareInvalid;
