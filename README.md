@@ -63,7 +63,7 @@ Xiropht-Miner: https://github.com/XIROPHT/Xiropht-Miner
 
 <h2>Credits</h2>
 
-**Tool and website programmed by Xiropht Developer.**
+**Tool and website programmed by Xiropht Developer (Sam Segura).**
 
 **Design of the website inspired of Cryptonote-Universal-Pool repository: https://github.com/fancoder/cryptonote-universal-pool/tree/master/website**
 
