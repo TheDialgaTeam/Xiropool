@@ -20,6 +20,7 @@ namespace Xiropht_Mining_Pool.Miner
         public long TotalMiningScore;
         public decimal TotalBalance;
         public decimal TotalPaid;
+        public decimal CustomMinimumPayment;
 
         /// <summary>
         /// Dynamic informations for filtering

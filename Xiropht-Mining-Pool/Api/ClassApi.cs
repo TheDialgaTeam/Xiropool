@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -29,10 +30,14 @@ namespace Xiropht_Mining_Pool.Api
 
         public const string GetWalletStats = "get_wallet_stats"; // Get the wallet stats by a wallet address.
         public const string GetWalletPaymentById = "get_wallet_payment_by_id"; // Get a payment done to a wallet address target by an index selected.
+        public const string SetWalletCustomMinimumPayment = "set_wallet_custom_minimum_payment"; // Permit to set a custom minimum payment (cannot to be less then the minimum of the pool).
         public const string WalletNoPaymentExist = "wallet_no_payment_exist";
         public const string WalletPaymentIndexNotExist = "wallet_payment_index_not_exist";
         public const string PacketNotExist = "not_exist";
         public const string WalletNotExist = "wallet_not_exist";
+        public const string CustomMinimumPaymentTooLowest = "custom_minimum_payment_too_lowest";
+        public const string CustomMinimumPaymentNotValid = "custom_minimum_payment_not_valid";
+        public const string CustomMinimumPaymentChanged = "custom_minimum_payment_changed";
         public const string IndexNotExist = "index_not_exist";
         public const string PacketError = "error";
 
@@ -350,11 +355,28 @@ namespace Xiropht_Mining_Pool.Api
                                 var blockResult = await ClassRemoteApi.GetBlockInformation(splitBlock[0]);
                                 if (blockResult != null)
                                 {
-                                    await BuildAndSendHttpPacketAsync(blockResult, false, null, true); // Send already jsonfyed request.
+                                    try
+                                    {
+                                        JObject jObjectBlock = JObject.Parse(blockResult);
+                                        if (jObjectBlock.ContainsKey("result")) // Usually showed has not exist when the remote node don't have finish to sync blocks mined.
+                                        {
+                                            await BuildAndSendHttpPacketAsync(ClassApiEnumeration.IndexNotExist);
+                                        }
+                                        else
+                                        {
+                                            await BuildAndSendHttpPacketAsync(blockResult, false, null, true); // Send already jsonfyed request.
+                                        }
+                                    }
+                                    catch (Exception error)
+                                    {
+                                        ClassLog.ConsoleWriteLog("Pool API - Remote Node HTTP API packet exception: " + error.Message + " packet received: " + blockResult, ClassLogEnumeration.IndexPoolApiErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog);
+                                        await BuildAndSendHttpPacketAsync(ClassApiEnumeration.PacketError);
+                                    }
                                 }
                                 else
                                 {
-                                    await BuildAndSendHttpPacketAsync(ClassApiEnumeration.IndexNotExist);
+                                    ClassLog.ConsoleWriteLog("Pool API - Warning, your Remote Node HTTP API seems to not respond !", ClassLogEnumeration.IndexPoolApiErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                                    await BuildAndSendHttpPacketAsync(ClassApiEnumeration.PacketError);
                                 }
                                 break;
                             }
@@ -433,6 +455,9 @@ namespace Xiropht_Mining_Pool.Api
                                 string totalBalance = "0";
                                 string totalPaid = "0";
                                 float totalHashrate = 0;
+                                float totalMiningScore = 0;
+                                float totalMiningScorePool = 0;
+                                decimal customMinimumPayment = 0;
 
                                 if (ClassMinerStats.DictionaryMinerTransaction.ContainsKey(splitPacket[1]))
                                 {
@@ -443,7 +468,15 @@ namespace Xiropht_Mining_Pool.Api
                                 totalBalance = ClassMinerStats.DictionaryMinerStats[splitPacket[1]].TotalBalance.ToString("F"+ClassConnectorSetting.MaxDecimalPlace);
                                 totalPaid = ClassMinerStats.DictionaryMinerStats[splitPacket[1]].TotalPaid.ToString("F"+ClassConnectorSetting.MaxDecimalPlace);
                                 totalHashrate = ClassMinerStats.DictionaryMinerStats[splitPacket[1]].CurrentTotalHashrate;
-
+                                totalMiningScore = ClassMinerStats.DictionaryMinerStats[splitPacket[1]].TotalMiningScore;
+                                customMinimumPayment = ClassMinerStats.DictionaryMinerStats[splitPacket[1]].CustomMinimumPayment;
+                                foreach(var minerStats in ClassMinerStats.DictionaryMinerStats)
+                                {
+                                    if (minerStats.Value.TotalMiningScore > 0)
+                                    {
+                                        totalMiningScorePool += minerStats.Value.TotalMiningScore;
+                                    }
+                                }
                                 Dictionary<string, string> minerStatsContent = new Dictionary<string, string>()
                                 {
                                     {"wallet_address", splitPacket[1] },
@@ -452,10 +485,46 @@ namespace Xiropht_Mining_Pool.Api
                                     {"wallet_total_invalid_share", ""+totalInvalidShare },
                                     {"wallet_total_balance", totalBalance },
                                     {"wallet_total_paid", totalPaid },
-                                    {"wallet_total_payment", ""+totalPayment }
+                                    {"wallet_total_payment", ""+totalPayment },
+                                    {"wallet_total_mining_score", totalMiningScore.ToString("F0") },
+                                    {"wallet_total_pool_mining_score", totalMiningScorePool.ToString("F0") },
+                                    {"wallet_custom_minimum_payment", ""+customMinimumPayment }
                                 };
                                 await BuildAndSendHttpPacketAsync(string.Empty, true, minerStatsContent);
                                 break;
+                            }
+                            else
+                            {
+                                await BuildAndSendHttpPacketAsync(ClassApiEnumeration.WalletNotExist);
+                            }
+                        }
+                        else
+                        {
+                            await BuildAndSendHttpPacketAsync(ClassApiEnumeration.PacketError);
+                        }
+                        break;
+                    case ClassApiEnumeration.SetWalletCustomMinimumPayment:
+                        if (splitPacket.Length > 2)
+                        {
+                            if (ClassMinerStats.DictionaryMinerStats.ContainsKey(splitPacket[1]))
+                            {
+                                var customMinimumPaymentString = ClassUtility.FormatMaxDecimalPlace(splitPacket[2]).Replace(".", ",");
+                                if (decimal.TryParse(customMinimumPaymentString, NumberStyles.Currency, Program.GlobalCultureInfo, out var customMinimumPayment))
+                                {
+                                    if (customMinimumPayment >= MiningPoolSetting.MiningPoolMinimumBalancePayment)
+                                    {
+                                        ClassMinerStats.DictionaryMinerStats[splitPacket[1]].CustomMinimumPayment = customMinimumPayment;
+                                        await BuildAndSendHttpPacketAsync(ClassApiEnumeration.CustomMinimumPaymentChanged);
+                                    }
+                                    else
+                                    {
+                                        await BuildAndSendHttpPacketAsync(ClassApiEnumeration.CustomMinimumPaymentTooLowest);
+                                    }
+                                }
+                                else
+                                {
+                                    await BuildAndSendHttpPacketAsync(ClassApiEnumeration.CustomMinimumPaymentNotValid);
+                                }
                             }
                             else
                             {
@@ -478,76 +547,84 @@ namespace Xiropht_Mining_Pool.Api
                 {
                     case ClassApiEnumeration.GetPoolStats:
                         decimal networkHashrate = 0;
-                        var networkInformationObject = JObject.Parse(await ClassRemoteApi.GetNetworkInformation());
-                        networkHashrate = decimal.Parse(networkInformationObject["coin_network_hashrate"].ToString());
-                        string lastBlockFoundDate = "0";
-                        if (ClassMiningPoolGlobalStats.ListBlockFound.Count > 0)
+                        string networkInformation = await ClassRemoteApi.GetNetworkInformation();
+                        if (networkInformation != null)
                         {
-                            lastBlockFoundDate = ClassMiningPoolGlobalStats.ListBlockFound[ClassMiningPoolGlobalStats.ListBlockFound.Count - 1].Split(new[] { "|" }, StringSplitOptions.None)[1];
-                        }
-                        var lastBlockFound = int.Parse(ClassMiningPoolGlobalStats.CurrentBlockId) - 1;
-                        string blockHash = string.Empty;
-                        string blockTimestampFound = "0";
-                        string blockReward = "0";
-                        if (ClassApi.DictionaryBlockHashCache.ContainsKey(lastBlockFound))
-                        {
-                            blockHash = ClassApi.DictionaryBlockHashCache[lastBlockFound];
-                            blockTimestampFound = ClassApi.DictionaryBlockDateFoundCache[lastBlockFound];
-                            blockReward = ClassApi.DictionaryBlockRewardCache[lastBlockFound];
-                        }
-                        else
-                        {
-                            var blockResult = await ClassRemoteApi.GetBlockInformation("" + lastBlockFound);
-                            if (blockResult != null)
+                            var networkInformationObject = JObject.Parse(networkInformation);
+                            networkHashrate = decimal.Parse(networkInformationObject["coin_network_hashrate"].ToString());
+                            string lastBlockFoundDate = "0";
+                            if (ClassMiningPoolGlobalStats.ListBlockFound.Count > 0)
                             {
-                                JObject blockJson = JObject.Parse(blockResult);
-                                blockHash = blockJson["block_hash"].ToString();
-                                blockTimestampFound = blockJson["block_timestamp_found"].ToString();
-                                blockReward = blockJson["block_reward"].ToString();
-                                try
-                                {
-                                    ClassApi.DictionaryBlockHashCache.Add(lastBlockFound, blockHash);
-                                }
-                                catch
-                                {
-
-                                }
-                                try
-                                {
-                                    ClassApi.DictionaryBlockDateFoundCache.Add(lastBlockFound, blockTimestampFound);
-                                }
-                                catch
-                                {
-
-                                }
-                                try
-                                {
-                                    ClassApi.DictionaryBlockRewardCache.Add(lastBlockFound, blockReward);
-                                }
-                                catch
-                                {
-
-                                }
+                                lastBlockFoundDate = ClassMiningPoolGlobalStats.ListBlockFound[ClassMiningPoolGlobalStats.ListBlockFound.Count - 1].Split(new[] { "|" }, StringSplitOptions.None)[1];
                             }
-                        }
-                        string miningPortInfo = string.Empty;
-                        if (MiningPoolSetting.MiningPoolMiningPort.Count > 0)
-                        {
-                            int counter = 0;
-                            foreach(var miningPort in MiningPoolSetting.MiningPoolMiningPort)
+                            var lastBlockFound = int.Parse(ClassMiningPoolGlobalStats.CurrentBlockId) - 1;
+                            string blockHash = string.Empty;
+                            string blockTimestampFound = "0";
+                            string blockReward = "0";
+                            if (ClassApi.DictionaryBlockHashCache.ContainsKey(lastBlockFound))
                             {
-                                counter++;
-                                if (counter < MiningPoolSetting.MiningPoolMiningPort.Count)
+                                blockHash = ClassApi.DictionaryBlockHashCache[lastBlockFound];
+                                blockTimestampFound = ClassApi.DictionaryBlockDateFoundCache[lastBlockFound];
+                                blockReward = ClassApi.DictionaryBlockRewardCache[lastBlockFound];
+                            }
+                            else
+                            {
+                                var blockResult = await ClassRemoteApi.GetBlockInformation("" + lastBlockFound);
+                                if (blockResult != null)
                                 {
-                                    miningPortInfo += miningPort.Key + "|" + miningPort.Value + ";"; // Mining port + mining difficulty;
+                                    JObject blockJson = JObject.Parse(blockResult);
+                                    blockHash = blockJson["block_hash"].ToString();
+                                    blockTimestampFound = blockJson["block_timestamp_found"].ToString();
+                                    blockReward = blockJson["block_reward"].ToString();
+                                    try
+                                    {
+                                        ClassApi.DictionaryBlockHashCache.Add(lastBlockFound, blockHash);
+                                    }
+                                    catch
+                                    {
+
+                                    }
+                                    try
+                                    {
+                                        ClassApi.DictionaryBlockDateFoundCache.Add(lastBlockFound, blockTimestampFound);
+                                    }
+                                    catch
+                                    {
+
+                                    }
+                                    try
+                                    {
+                                        ClassApi.DictionaryBlockRewardCache.Add(lastBlockFound, blockReward);
+                                    }
+                                    catch
+                                    {
+
+                                    }
                                 }
                                 else
                                 {
-                                    miningPortInfo += miningPort.Key + "|" + miningPort.Value; // Mining port + mining difficulty;
+                                    ClassLog.ConsoleWriteLog("Pool API - Warning, your Remote Node HTTP API seems to not respond !", ClassLogEnumeration.IndexPoolApiErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                                    await BuildAndSendHttpPacketAsync(ClassApiEnumeration.PacketError);
                                 }
                             }
-                        }
-                        Dictionary<string, string> poolStatsContent = new Dictionary<string, string>()
+                            string miningPortInfo = string.Empty;
+                            if (MiningPoolSetting.MiningPoolMiningPort.Count > 0)
+                            {
+                                int counter = 0;
+                                foreach (var miningPort in MiningPoolSetting.MiningPoolMiningPort)
+                                {
+                                    counter++;
+                                    if (counter < MiningPoolSetting.MiningPoolMiningPort.Count)
+                                    {
+                                        miningPortInfo += miningPort.Key + "|" + miningPort.Value + ";"; // Mining port + mining difficulty;
+                                    }
+                                    else
+                                    {
+                                        miningPortInfo += miningPort.Key + "|" + miningPort.Value; // Mining port + mining difficulty;
+                                    }
+                                }
+                            }
+                            Dictionary<string, string> poolStatsContent = new Dictionary<string, string>()
                         {
                             {"pool_hashrate", "" + ClassMiningPoolGlobalStats.TotalMinerHashrate },
                             {"pool_total_miner_connected", "" + ClassMiningPoolGlobalStats.TotalMinerConnected },
@@ -567,7 +644,13 @@ namespace Xiropht_Mining_Pool.Api
                             {"network_last_block_reward", blockReward }
 
                         };
-                        await BuildAndSendHttpPacketAsync(string.Empty, true, poolStatsContent);
+                            await BuildAndSendHttpPacketAsync(string.Empty, true, poolStatsContent);
+                        }
+                        else
+                        {
+                            ClassLog.ConsoleWriteLog("Pool API - Warning, your Remote Node HTTP API seems to not respond !", ClassLogEnumeration.IndexPoolApiErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                            await BuildAndSendHttpPacketAsync(ClassApiEnumeration.PacketError);
+                        }
                         break;
                     default:
                         await BuildAndSendHttpPacketAsync(ClassApiEnumeration.PacketNotExist);

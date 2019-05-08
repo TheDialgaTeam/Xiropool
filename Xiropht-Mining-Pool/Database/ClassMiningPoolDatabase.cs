@@ -21,6 +21,7 @@ namespace Xiropht_Mining_Pool.Database
         public const string DatabaseMinerTotalBalance = "[TOTAL_BALANCE]";
         public const string DatabaseMinerTotalPaid = "[TOTAL_PAID]";
         public const string DatabaseMinerTotalMiningScore = "[TOTAL_MINING_SCORE]";
+        public const string DatabaseMinerCustomMinimumPayment = "[CUSTOM_MINIMUM_PAYMENT]";
     }
 
     public class ClassMiningPoolDatabaseEnumeration
@@ -97,6 +98,10 @@ namespace Xiropht_Mining_Pool.Database
                                                         else if (minerInfo.StartsWith(ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalBalance))
                                                         {
                                                             ClassMinerStats.DictionaryMinerStats[minerWalletAddress].TotalBalance = decimal.Parse(minerInfo.Replace(ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalBalance, "").Replace(".", ","), NumberStyles.Currency, Program.GlobalCultureInfo);
+                                                        }
+                                                        else if (minerInfo.StartsWith(ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerCustomMinimumPayment))
+                                                        {
+                                                            ClassMinerStats.DictionaryMinerStats[minerWalletAddress].CustomMinimumPayment = decimal.Parse(minerInfo.Replace(ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerCustomMinimumPayment, "").Replace(".", ","), NumberStyles.Currency, Program.GlobalCultureInfo);
                                                         }
                                                     }
                                                 }
@@ -235,10 +240,12 @@ namespace Xiropht_Mining_Pool.Database
                                                   ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalInvalidShare + miner.Value.TotalInvalidShare + "|" +
                                                   ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalMiningScore + miner.Value.TotalMiningScore + "|" +
                                                   ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalBalance + miner.Value.TotalBalance + "|" +
-                                                  ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalPaid + miner.Value.TotalPaid + "|";
+                                                  ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalPaid + miner.Value.TotalPaid + "|" +
+                                                  ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerCustomMinimumPayment + miner.Value.CustomMinimumPayment;
                                     minerWriter.WriteLine(line);
                                 }
                             }
+                            minerWriter.Flush();
                         }
                         ClassLog.ConsoleWriteLog("Auto save miner database: " + ClassMinerStats.DictionaryMinerStats.Count + " total miners saved.", ClassLogEnumeration.IndexPoolGeneralLog);
                     }
@@ -296,10 +303,12 @@ namespace Xiropht_Mining_Pool.Database
                                           ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalInvalidShare + miner.Value.TotalInvalidShare + "|" +
                                           ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalMiningScore + miner.Value.TotalMiningScore + "|" +
                                           ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalBalance + miner.Value.TotalBalance + "|" +
-                                          ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalPaid + miner.Value.TotalPaid + "|";
+                                          ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalPaid + miner.Value.TotalPaid + "|" +
+                                          ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerCustomMinimumPayment + miner.Value.CustomMinimumPayment;
                             minerWriter.WriteLine(line);
                         }
                     }
+                    minerWriter.Flush();
                 }
                 ClassLog.ConsoleWriteLog("Auto save miner database: " + ClassMinerStats.DictionaryMinerStats.Count + " total miners saved.", ClassLogEnumeration.IndexPoolGeneralLog);
             }
@@ -331,7 +340,7 @@ namespace Xiropht_Mining_Pool.Database
             if (ClassMinerStats.DictionaryMinerTransaction.Count > 0)
             {
                 File.Create(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + MinerTransactionDatabaseFile)).Close();
-                using (var minerWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + MinerTransactionDatabaseFile), true, Encoding.UTF8, 8192) { AutoFlush = true })
+                using (var transactionMinerWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + MinerTransactionDatabaseFile), true, Encoding.UTF8, 8192) { AutoFlush = true })
                 {
                     foreach (var miner in ClassMinerStats.DictionaryMinerTransaction)
                     {
@@ -342,11 +351,12 @@ namespace Xiropht_Mining_Pool.Database
                                 foreach (var transaction in miner.Value)
                                 {
                                     string line = ClassMiningPoolTransactionDatabaseEnumeration.DatabaseTransactionStart + miner.Key + "|" + transaction;
-                                    minerWriter.WriteLine(line);
+                                    transactionMinerWriter.WriteLine(line);
                                 }
                             }
                         }
                     }
+                    transactionMinerWriter.Flush();
                 }
             }
             #endregion
@@ -362,7 +372,6 @@ namespace Xiropht_Mining_Pool.Database
             {
                 transactionWriter.WriteLine(ClassMiningPoolTransactionDatabaseEnumeration.DatabaseTransactionStart+transaction);
             }
-           
         }
     }
 }

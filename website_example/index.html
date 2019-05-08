@@ -103,7 +103,7 @@
 
 	<div class="stats center-block">
 		<h3 class="center-block">Your Stats & Payment History</h3>
-		<div><p id="errorWalletAddress"class="text-danger text-center">Input Wallet Address: <span id="WalletAddressNotExist"></span> not exist</p></div>
+		<div><p id="errorWalletAddress" class="text-danger text-center">Input Wallet Address: <span id="WalletAddressNotExist"></span> not exist</p></div>
 		<div class="input-group">
 			<input class="form-control" id="yourStatsInput" type="text" placeholder="Enter Your Address">
 			<span class="input-group-btn">
@@ -115,11 +115,27 @@
 		</div>
 		<div class="row center-block" id="MinerStats">
 			<div class="col-sm-4 stats">
-				<div><i class="fa fa-bank"></i> Pending Balance: <span id="totalPendingBalance"></span></div>
-            			<div><i class="fa fa-money"></i> Total Paid: <span id="totalPaid"></span></div>
-            			<div><i class="fa fa-tachometer"></i> Hash Rate: <span id="totalHashrate"></span></div>
-            			<div><i class="fa fa-cloud-upload"></i> Total Good Share Submitted: <span id="totalGoodShare"></span></div>
+				<div><i class="fa fa-bank"></i> Pending Balance: <span id="totalPendingBalance">0</span></div>
+            			<div><i class="fa fa-money"></i> Total Paid: <span id="totalPaid">0</span></div>
+            			<div><i class="fa fa-tachometer"></i> Hash Rate: <span id="totalHashrate">0</span></div>
+            			<div><i class="fa fa-cloud-upload"></i> Total Good Share Submitted: <span id="totalGoodShare">0</span></div>
+            			<div><i class="fa fa-cloud-upload"></i> Current Mining Score: <span id="currentMiningScore">0</span></div>
+            			<div><i class="fa fa-cloud-upload"></i> Current Pool Mining Score: <span id="currentPoolMiningScore">0</span></div>
+            			<div><i class="fa fa-money"></i> Block Reward Percent expected: <span id="blockRewardPercent">0</span>% </div>
+            			<div><i class="fa fa-money"></i> Block Reward expected: <span id="blockRewardExpected">0</span></div>
+
 				<div>Total Payment(s): <span id="totalPayment"></span></div>
+            			<div>Custom minimum payment: <span id="customMinimumPayment"></span></div>
+				<h4 class="center-block">Custom your minimum payment:</h4>
+				<div><p id="noticeCustomMinimumPayment" class="text-info text-center">Custom minimum payment status: <span id="CustomMinimumPaymentInfo"></span>.</p></div>
+				<div class="input-group">
+					<input class="form-control" id="yourCustomMinimumPayment" type="text" placeholder="Enter your custom minimum payment">
+					<span class="input-group-btn">
+						<button class="btn btn-default" type="button" id="lookUpCustomMinimumPayment">
+							<span><i class="fa fa-send"></i> Submit</span>
+						</button>
+					</span>
+				</div>
         		</div>
 		</div>
 
@@ -211,9 +227,11 @@
 	var currentWalletAddress = "";
 	var walletStatsAutoUpdate = false;
 	var walletStatsAutoUpdateObject;
+	var walletCustomPaymentTimeoutObject;
 	var totalTransaction = 0;
 	var pageTransaction = 1;
 	var maxTransaction = 10;
+	var lastBlockReward = 0;
 	var transaction = [];
 	var inUpdating = false;
 
@@ -238,7 +256,8 @@
 				}
 				else
 				{
-					var seconds = (GetAmountOfCalculationPossibility(data.network_difficulty)  / parseFloat(data.pool_hashrate)) * 60 * 24;
+					var difference = data.network_difficulty / data.network_hashrate;
+					var seconds = (GetAmountOfCalculationPossibility(data.network_difficulty)   / parseFloat(data.pool_hashrate)) * 60 * 24;
 					if (seconds >= 1)
 					{
 						document.getElementById("PoolFoundBlockTime").innerHTML = GetTimeAgo(seconds) + " (est)";
@@ -273,6 +292,7 @@
 				}
 				document.getElementById("NetworkLastBlockFoundHash").innerHTML = "<a href='" + blockExplorer + data.network_last_block_hash + "' target='_blank'>" + data.network_last_block_hash.substr(0,16) +"..</a>";
 				document.getElementById("NetworkLastBlockReward").innerHTML = data.network_last_block_reward + " "+ coinMinName;
+				lastBlockReward = parseFloat(data.network_last_block_reward);
 			}
 		}
 		xmlHttp.open("GET", apiHost + "get_pool_stats", true); // async
@@ -300,11 +320,25 @@
 				{
 					document.getElementById("totalHashrate").innerHTML = formatHashrate(data.wallet_total_hashrate);
 					document.getElementById("totalGoodShare").innerHTML = data.wallet_total_good_share;
-					document.getElementById("totalPendingBalance").innerHTML = data.wallet_total_balance + " " + coinMinName;
-					document.getElementById("totalPaid").innerHTML = data.wallet_total_paid + " " + coinMinName;
+					document.getElementById("totalPendingBalance").innerHTML = data.wallet_total_balance.replace(',', '.') + " " + coinMinName;
+					document.getElementById("totalPaid").innerHTML = data.wallet_total_paid.replace(',', '.') + " " + coinMinName;
 					document.getElementById("MinerStats").style = "display:visible";
 					document.getElementById("MinerPayments").style = "display:visible";
 					document.getElementById("totalPayment").innerHTML = data.wallet_total_payment;
+					document.getElementById("currentMiningScore").innerHTML = data.wallet_total_mining_score;
+					document.getElementById("currentPoolMiningScore").innerHTML = data.wallet_total_pool_mining_score;
+					var miningScoreRewardPercent = (parseFloat(data.wallet_total_mining_score) / parseFloat(data.wallet_total_pool_mining_score)) * 100;
+					document.getElementById("blockRewardPercent").innerHTML = toFixedTrunc(miningScoreRewardPercent, 2);
+					var miningBlockRewardExpected = (lastBlockReward * miningScoreRewardPercent) / 100;
+					document.getElementById("blockRewardExpected").innerHTML = toFixedTrunc(miningBlockRewardExpected, 8) + " " + coinMinName;
+					if (data.wallet_custom_minimum_payment <= 0)
+					{
+						document.getElementById("customMinimumPayment").innerHTML = "On use default one.";
+					}
+					else
+					{
+						document.getElementById("customMinimumPayment").innerHTML = data.wallet_custom_minimum_payment.replace(',', '.') + " " + coinMinName;
+					}
 					if ((currentWalletAddress != walletAddress))
 					{
 						currentWalletAddress = walletAddress;
@@ -333,6 +367,7 @@
 					document.getElementById("MinerStats").style = "display:none";
 					document.getElementById("MinerPayments").style = "display:none";
 					document.getElementById("WalletAddressNotExist").innerHTML = walletAddress;
+					document.getElementById("noticeCustomMinimumPayment").style = "display:none";
 					currentWalletAddress = "";
 					totalTransaction = 0;
 					transaction = [];
@@ -365,11 +400,26 @@
 				var data = JSON.parse(xmlHttp.responseText);
 				document.getElementById("totalHashrate").innerHTML = formatHashrate(data.wallet_total_hashrate);
 				document.getElementById("totalGoodShare").innerHTML = data.wallet_total_good_share;
-				document.getElementById("totalPendingBalance").innerHTML = data.wallet_total_balance + " " + coinMinName;
-				document.getElementById("totalPaid").innerHTML = data.wallet_total_paid + " " + coinMinName;
+				document.getElementById("totalPendingBalance").innerHTML = data.wallet_total_balance.replace(',', '.') + " " + coinMinName;
+				document.getElementById("totalPaid").innerHTML = data.wallet_total_paid.replace(',', '.') + " " + coinMinName;
 				document.getElementById("MinerStats").style = "display:visible";
 				document.getElementById("MinerPayments").style = "display:visible";
 				document.getElementById("totalPayment").innerHTML = data.wallet_total_payment;
+				document.getElementById("currentMiningScore").innerHTML = data.wallet_total_mining_score;
+				document.getElementById("currentPoolMiningScore").innerHTML = data.wallet_total_pool_mining_score;
+				var miningScoreRewardPercent = (parseFloat(data.wallet_total_mining_score) / parseFloat(data.wallet_total_pool_mining_score)) * 100;
+				document.getElementById("blockRewardPercent").innerHTML = toFixedTrunc(miningScoreRewardPercent, 2);
+				var miningBlockRewardExpected = (lastBlockReward * miningScoreRewardPercent) / 100;
+				document.getElementById("blockRewardExpected").innerHTML = toFixedTrunc(miningBlockRewardExpected, 8) + " " + coinMinName;
+				if (data.wallet_custom_minimum_payment <= 0)
+				{
+					document.getElementById("customMinimumPayment").innerHTML = "On use default one.";
+				}
+				else
+				{
+					document.getElementById("customMinimumPayment").innerHTML = data.wallet_custom_minimum_payment.replace(',', '.') + " " + coinMinName;
+				}
+
 				UpdateWalletPayment(data);
 			}
 		}
@@ -530,6 +580,61 @@
 		xmlHttp.send();
 	}
 
+	function SetWalletCustomMinimumPayment(customMinimumPaymentSelected)
+	{
+		var xmlHttp = new XMLHttpRequest();
+		xmlHttp.onreadystatechange = function()
+		{ 
+			if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+			{
+				var data = JSON.parse(xmlHttp.responseText);
+				if (walletCustomPaymentTimeoutObject != null)
+				{
+					clearTimeout(walletCustomPaymentTimeoutObject);
+				}
+				if(data.result == "wallet_not_exist")
+				{
+					document.getElementById("noticeCustomMinimumPayment").style = "display:visible";
+					document.getElementById("CustomMinimumPaymentInfo").innerHTML = "Current wallet address not exist.";
+					walletCustomPaymentTimeoutObject = setTimeout(function()
+					{
+						document.getElementById("noticeCustomMinimumPayment").style = "display:none";
+					}, 2000);
+				}
+				else if (data.result == "custom_minimum_payment_not_valid")
+				{
+					document.getElementById("noticeCustomMinimumPayment").style = "display:visible";
+					document.getElementById("CustomMinimumPaymentInfo").innerHTML = "Custom minimum payment selected is invalid.";
+					walletCustomPaymentTimeoutObject = setTimeout(function()
+					{
+						document.getElementById("noticeCustomMinimumPayment").style = "display:none";
+					}, 2000);
+				}
+				else if (data.result == "custom_minimum_payment_too_lowest")
+				{
+					document.getElementById("noticeCustomMinimumPayment").style = "display:visible";
+					document.getElementById("CustomMinimumPaymentInfo").innerHTML = "Custom minimum payment selected is too lowest comparing of the default one.";
+					walletCustomPaymentTimeoutObject = setTimeout(function()
+					{
+						document.getElementById("noticeCustomMinimumPayment").style = "display:none";
+					}, 2000);
+				}
+				else if (data.result == "custom_minimum_payment_changed")
+				{
+					document.getElementById("noticeCustomMinimumPayment").style = "display:visible";
+					document.getElementById("CustomMinimumPaymentInfo").innerHTML = "Custom minimum payment selected has been successfully accepted.";
+					walletCustomPaymentTimeoutObject = setTimeout(function()
+					{
+						document.getElementById("noticeCustomMinimumPayment").style = "display:none";
+					}, 2000);
+
+				}
+			}
+		}
+		xmlHttp.open("GET", apiHost + "set_wallet_custom_minimum_payment|"+currentWalletAddress+"|"+customMinimumPaymentSelected, true); // async
+		xmlHttp.send();
+	}
+
 
 	function GetTimeAgo(timeago)
 	{
@@ -645,6 +750,7 @@
 	document.getElementById("MinerStats").style = "display:none";
 	document.getElementById("MinerPayments").style = "display:none";
 	document.getElementById("errorWalletAddress").style = "display:none";
+	document.getElementById("noticeCustomMinimumPayment").style = "display:none";
 	urls = ['/js/jquery.min.js', '/js/bootstrap.min.js','/js/jquery-3.3.1.min.js'];
 
 	loadScripts(urls, urls.length, function()
@@ -653,6 +759,7 @@
 		{
 			apiHost += "/";
 		}
+
 		WebFontConfig = 
 		{
 			google: { families: [ 'Inconsolata' ] }
@@ -692,6 +799,7 @@
 				else
 				{
 					document.getElementById("errorWalletAddress").style = "display:none";
+					document.getElementById("noticeCustomMinimumPayment").style = "display:none";
 					transaction = [];
 					document.getElementById("payments_rows").innerHTML = "";
 					totalTransaction = 0;
@@ -701,11 +809,32 @@
 			}
 		});
 
-
 		$("#yourStatsInput").keyup(function(e)
 		{
 			if (e.keyCode === 13)
 				$("#lookUp").click();
+		});
+
+
+		$("#lookUpCustomMinimumPayment").click(function()
+		{
+			var customMinimumPayment = $("#yourCustomMinimumPayment").val().trim();
+			if (yourCustomMinimumPayment == null)
+			{
+				$("#yourCustomMinimumPayment").focus();
+			}
+			else
+			{
+				document.getElementById("noticeCustomMinimumPayment").style = "display:none";
+				SetWalletCustomMinimumPayment(customMinimumPayment);
+			}
+		});
+
+
+		$("#yourCustomMinimumPayment").keyup(function(e)
+		{
+			if (e.keyCode === 13)
+				$("#lookUpCustomMinimumPayment").click();
 		});
 
 		$("#loadMorePayments").click(function()

@@ -57,47 +57,50 @@ namespace Xiropht_Mining_Pool.Payment
 
                                                         if (minerStats.Value.TotalBalance >= MiningPoolSetting.MiningPoolMinimumBalancePayment)
                                                         {
-                                                            if (await ClassRpcWallet.GetCurrentBalance())
+                                                            if (minerStats.Value.CustomMinimumPayment == 0 || minerStats.Value.TotalBalance >= minerStats.Value.CustomMinimumPayment) // Make payment if the miner don't have select a custom minimum payment or when his current balance reach his custom minimum payment set.
                                                             {
-                                                                if (minerStats.Value.TotalBalance <= ClassMiningPoolGlobalStats.PoolCurrentBalance)
+                                                                if (await ClassRpcWallet.GetCurrentBalance())
                                                                 {
-                                                                    decimal minersBalanceBase = minerStats.Value.TotalBalance;
-                                                                    decimal minersBalance = minerStats.Value.TotalBalance;
-                                                                    minersBalance = minersBalance - MiningPoolSetting.MiningPoolFeeTransactionPayment;
-                                                                    ClassLog.ConsoleWriteLog("Attempt to send transaction of " + minersBalance + " " + ClassConnectorSetting.CoinNameMin + " to miner " + minerStats.Key, ClassLogEnumeration.IndexPoolPaymentLog);
-                                                                    long dateSent = ClassUtility.GetCurrentDateInSecond();
-
-                                                                    string resultPayment = await ClassRpcWallet.SendTransaction(minerStats.Key,  minersBalance);
-                                                                    if (resultPayment != string.Empty)
+                                                                    if (minerStats.Value.TotalBalance <= ClassMiningPoolGlobalStats.PoolCurrentBalance)
                                                                     {
-                                                                        var resultPaymentSplit = resultPayment.Split(new[] { "|" }, StringSplitOptions.None);
-                                                                        switch (resultPaymentSplit[0])
+                                                                        decimal minersBalanceBase = minerStats.Value.TotalBalance;
+                                                                        decimal minersBalance = minerStats.Value.TotalBalance;
+                                                                        minersBalance = minersBalance - MiningPoolSetting.MiningPoolFeeTransactionPayment;
+                                                                        ClassLog.ConsoleWriteLog("Attempt to send transaction of " + minersBalance + " " + ClassConnectorSetting.CoinNameMin + " to miner " + minerStats.Key, ClassLogEnumeration.IndexPoolPaymentLog);
+                                                                        long dateSent = ClassUtility.GetCurrentDateInSecond();
+
+                                                                        string resultPayment = await ClassRpcWallet.SendTransaction(minerStats.Key, minersBalance);
+                                                                        if (resultPayment != string.Empty)
                                                                         {
-                                                                            case ClassRpcWalletCommand.SendTokenTransactionConfirmed:
-                                                                                minerStats.Value.TotalBalance -= minersBalanceBase;
-                                                                                minerStats.Value.TotalPaid += minersBalanceBase;
-                                                                                ClassMiningPoolGlobalStats.PoolTotalPaid += minersBalanceBase;
-                                                                                ClassMinerStats.InsertTransactionPayment(minerStats.Key, resultPaymentSplit[1], minersBalance, dateSent);
-                                                                                ClassLog.ConsoleWriteLog("Transaction sent to miner " + minerStats.Key + " is confirmed, transaction hash: " + resultPaymentSplit[1], ClassLogEnumeration.IndexPoolPaymentLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
-                                                                                break;
-                                                                            default:
-                                                                                ClassLog.ConsoleWriteLog("Transaction sent to miner " + minerStats.Key + " is not confirmed, response received: " + resultPaymentSplit[0], ClassLogEnumeration.IndexPoolPaymentLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
-                                                                                break;
+                                                                            var resultPaymentSplit = resultPayment.Split(new[] { "|" }, StringSplitOptions.None);
+                                                                            switch (resultPaymentSplit[0])
+                                                                            {
+                                                                                case ClassRpcWalletCommand.SendTokenTransactionConfirmed:
+                                                                                    minerStats.Value.TotalBalance -= minersBalanceBase;
+                                                                                    minerStats.Value.TotalPaid += minersBalanceBase;
+                                                                                    ClassMiningPoolGlobalStats.PoolTotalPaid += minersBalanceBase;
+                                                                                    ClassMinerStats.InsertTransactionPayment(minerStats.Key, resultPaymentSplit[1], minersBalance, dateSent);
+                                                                                    ClassLog.ConsoleWriteLog("Transaction sent to miner " + minerStats.Key + " is confirmed, transaction hash: " + resultPaymentSplit[1], ClassLogEnumeration.IndexPoolPaymentLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
+                                                                                    break;
+                                                                                default:
+                                                                                    ClassLog.ConsoleWriteLog("Transaction sent to miner " + minerStats.Key + " is not confirmed, response received: " + resultPaymentSplit[0], ClassLogEnumeration.IndexPoolPaymentLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                                                                                    break;
+                                                                            }
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            ClassLog.ConsoleWriteLog("No response from RPC Wallet to proceed payment to miner: " + minerStats.Key, ClassLogEnumeration.IndexPoolPaymentErrorLog);
                                                                         }
                                                                     }
                                                                     else
                                                                     {
-                                                                        ClassLog.ConsoleWriteLog("No response from RPC Wallet to proceed payment to miner: " + minerStats.Key, ClassLogEnumeration.IndexPoolPaymentErrorLog);
+                                                                        ClassLog.ConsoleWriteLog("Can't proceed payment to miner: " + minerStats.Key + ",  not enought coin on the pool wallet. | " + minerStats.Value.TotalBalance + "/" + ClassMiningPoolGlobalStats.PoolCurrentBalance, ClassLogEnumeration.IndexPoolPaymentErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
                                                                     }
                                                                 }
                                                                 else
                                                                 {
-                                                                    ClassLog.ConsoleWriteLog("Can't proceed payment to miner: " + minerStats.Key + ",  not enought coin on the pool wallet. | " + minerStats.Value.TotalBalance + "/" + ClassMiningPoolGlobalStats.PoolCurrentBalance, ClassLogEnumeration.IndexPoolPaymentErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                                                                    ClassLog.ConsoleWriteLog("Can't proceed payment to miner: " + minerStats.Key + ", cannot get current pool balance.", ClassLogEnumeration.IndexPoolPaymentErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
                                                                 }
-                                                            }
-                                                            else
-                                                            {
-                                                                ClassLog.ConsoleWriteLog("Can't proceed payment to miner: " + minerStats.Key + ", cannot get current pool balance.", ClassLogEnumeration.IndexPoolPaymentErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
                                                             }
                                                         }
                                                     }
