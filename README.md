@@ -1,6 +1,13 @@
 # Xiropht-Mining-Pool
 Mining pool tool compatible with Xiropht, released has example tool with an example of website, this mining pool tool is compatible with Windows/Linux and more.
 
+**Not updated anymore, you can take it has example to do your own pool**
+
+<h2>Problems to Fix</h2>
+Released has example, the pool tool can't predict how math calculations are generated from miners. 
+Every calculations of hashrate and rewards are approxitimative and can be cheated on this tool.
+
+
 <h2>Description</h2>
 
 -> This mining pool tool don't require to sync blocks to receive the latest blocktemplate.
