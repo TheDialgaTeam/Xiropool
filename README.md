@@ -9,7 +9,7 @@ Mining pool tool compatible with Xiropht, **released has example tool with an ex
  
 **Every calculations of hashrate and rewards are approxitimative and can be cheated on this tool.**
 
-**If you don't do the necessary, somebody can manipulate your pool, that's not give more chance to found a block from cheaters**
+**If you don't do the necessary, somebody can manipulate your pool, that's not give more chance to found a block from cheaters and flooders.**
 
 <h2>Description</h2>
 
