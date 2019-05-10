@@ -4,6 +4,7 @@ Mining pool tool compatible with Xiropht, **released has example tool with an ex
 **Not updated anymore, you can take it has example to do your own pool**
 
 <h2>Problems to Fix</h2>
+
 **Released has example, the pool tool can't predict how math calculations are generated from miners.**
  
 **Every calculations of hashrate and rewards are approxitimative and can be cheated on this tool.**
