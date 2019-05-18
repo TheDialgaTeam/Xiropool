@@ -60,12 +60,6 @@ Xiropht-Miner: https://github.com/XIROPHT/Xiropht-Miner
   
   - exit | Safe exit, Stop mining pool, save and exit.
 
-<h2>Future features</h2>
-
--> MySQL Database system option.
-
--> Worker monitoring system.
-
 <h2>Improvements</h2>
 
 **Their is few things who require improvements:**
