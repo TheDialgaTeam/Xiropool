@@ -89,13 +89,13 @@ namespace Xiropht_Mining_Pool.Setting
                                                         foreach (var linePort in splitLinePort)
                                                         {
                                                             var splitPort = linePort.Split(new[] { "|" }, StringSplitOptions.None);
-                                                            MiningPoolSetting.MiningPoolMiningPort.Add(int.Parse(splitPort[0]), float.Parse(splitPort[1]));
+                                                            MiningPoolSetting.MiningPoolMiningPort.Add(int.Parse(splitPort[0]), Math.Round(decimal.Parse(splitPort[1]), 0));
                                                         }
                                                     }
                                                     else
                                                     {
                                                         var splitPort = splitLine[1].Split(new[] { "|" }, StringSplitOptions.None);
-                                                        MiningPoolSetting.MiningPoolMiningPort.Add(int.Parse(splitPort[0]), float.Parse(splitPort[1]));
+                                                        MiningPoolSetting.MiningPoolMiningPort.Add(int.Parse(splitPort[0]), Math.Round(decimal.Parse(splitPort[1]), 0));
                                                     }
                                                     break;
                                                 case MiningPoolSettingEnumeration.SettingMiningPoolApiPort:
@@ -319,7 +319,7 @@ namespace Xiropht_Mining_Pool.Setting
                 streamWriterConfigPool.WriteLine("");
 
                 streamWriterConfigPool.WriteLine("// Maximum of time of waiting a response from a miner. If the time is reach the miner is disconnected.");
-                streamWriterConfigPool.WriteLine(MiningPoolSettingEnumeration.SettingMiningPoolTimeout + "=60");
+                streamWriterConfigPool.WriteLine(MiningPoolSettingEnumeration.SettingMiningPoolTimeout + "=600");
                 streamWriterConfigPool.WriteLine("");
                 streamWriterConfigPool.WriteLine("");
 

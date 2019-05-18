@@ -12,7 +12,6 @@ using Xiropht_Connector_All.Utils;
 using Xiropht_Mining_Pool.Log;
 using Xiropht_Mining_Pool.Miner;
 using Xiropht_Mining_Pool.Network;
-using Xiropht_Mining_Pool.Payment;
 using Xiropht_Mining_Pool.Setting;
 using Xiropht_Mining_Pool.Threading;
 using Xiropht_Mining_Pool.Utility;
@@ -22,7 +21,7 @@ namespace Xiropht_Mining_Pool.Mining
     public class ClassMiningPool
     {
         public int MiningPoolPort;
-        public float MiningPoolDifficultyStart;
+        public decimal MiningPoolDifficultyStart;
         private TcpListener TcpListenerMiningPool;
         private Thread ThreadMiningPool;
         public bool MiningPoolStatus;
@@ -31,7 +30,7 @@ namespace Xiropht_Mining_Pool.Mining
         /// Constructor
         /// </summary>
         /// <param name="miningPoolPort"></param>
-        public ClassMiningPool(int miningPoolPort, float miningPoolDifficultyStart)
+        public ClassMiningPool(int miningPoolPort, decimal miningPoolDifficultyStart)
         {
             MiningPoolPort = miningPoolPort;
             MiningPoolDifficultyStart = miningPoolDifficultyStart;
@@ -157,37 +156,58 @@ namespace Xiropht_Mining_Pool.Mining
         /// <summary>
         /// Network informations.
         /// </summary>
-        public bool IsConnected;
-        public bool IsLogged;
-        public bool UseCustomDifficulty;
-        private long LastPacketReceived;
-        public long LastShareReceived;
-        public long TotalShareReceived;
-        public float CurrentHashrate;
-        public float CurrentHashEffort;
-        private long TotalPacketReceivedPerSecond;
-        private long LastJobDateReceive;
-        public long LoginDate;
-        private string Ip;
         private TcpClient TcpMiner;
-        private int MiningPoolPort;
-        private string CurrentBlockHashOnMining;
+        public bool IsConnected; // Indicate the status of the connection of the mining instance.
+        public bool IsLogged; // Indicate if the mining instance is successfully logged.
+        private long LastPacketReceived; // Last packet received on the mining instance.
+        private string Ip; // IP of the mining instance.
+        public long LoginDate; // Login date of the mining instance.
+
 
         /// <summary>
-        /// Miner informations.
+        /// Miner setting informations.
         /// </summary>
-        public string MinerWalletAddress;
-        private string MinerVersion;
-        public float CurrentMiningJob;
-        public float CurrentMiningJobDifficulty;
-        private float PreviousMiningJob;
-        private float MiningDifficultyStart;
-        public int TotalGoodShare;
-        public long TotalGoodShareDone;
-        public float TotalMiningScore;
+        public string MinerWalletAddress; // Miner wallet address of the instance.
+        public bool UseCustomDifficulty; // Indicate if the miner use a custom difficulty.
+        private int MiningPoolPort; // Mining pool port selected by the miner on the mining instance.
+        private decimal MiningPoolPortDifficulty; // Mining pool port difficulty start.
+        private string MinerVersion; // Miner version used on the mining instance.
 
-        private Dictionary<string, float> ListOfShare;
-        public List<float> ListOfJob;
+        /// <summary>
+        /// Miner stats informations.
+        /// </summary>
+        public long TotalGoodShareDone; // Total good share done on the mining instance.
+        private decimal LastShareDifficultyDone;
+        public decimal TotalMiningScore; // Total mining score obtain on the mining instance.
+        public decimal TotalMiningScoreExpected; // Total mining score expected on the mining instance.
+        public long TotalShareReceived; // Total share received on the mining instance.
+        public long LastShareReceived; // Last share received on the mining instance.
+        private long TotalPacketReceivedPerSecond; // Total packet received per second.
+        private long LastJobDateReceive; // Last job date received.
+        public decimal CurrentHashrate; // Current hashrate of the mining instance.
+
+        /// <summary>
+        /// Miner jobs informations.
+        /// </summary>
+        private decimal MiningDifficultyStart; // Difficulty selected at the start, from port or by custom difficulty.
+        public decimal CurrentMiningJobDifficulty; // Current mining job difficulty.
+        private string CurrentBlockHashOnMining; // Current block hash of the current blocktemplate.
+        public decimal CurrentHashEffort; // Current hash efforts provided by the miner.
+
+        /// <summary>
+        /// Current job informations.
+        /// </summary>
+        private decimal CurrentMinRangeJob; // Current min range selected by the pool.
+        private decimal CurrentMaxRangeJob; // Current max range selected by the pool.
+        private string CurrentShareIndicationHashJob;
+
+
+        /// <summary>
+        /// Dictionary of share provided by the miner saved.
+        /// </summary>
+        private Dictionary<string, string> ListOfShare;
+        private Dictionary<string, Tuple<string, string>> ListOfShareToFound;
+
 
         /// <summary>
         /// Constructor
@@ -199,8 +219,8 @@ namespace Xiropht_Mining_Pool.Mining
             TcpMiner = tcpMiner;
             MinerWalletAddress = string.Empty;
             MiningPoolPort = miningPoolPort;
-            ListOfShare = new Dictionary<string, float>();
-            ListOfJob = new List<float>();
+            ListOfShare = new Dictionary<string, string>();
+            ListOfShareToFound = new Dictionary<string, Tuple<string, string>>();
         }
 
         #region Dispose functions
@@ -232,191 +252,111 @@ namespace Xiropht_Mining_Pool.Mining
         /// <summary>
         /// Spead job to the miner.
         /// </summary>
-        public async void MiningPoolSendJobAsync(float jobTarget = 0)
+        public async void MiningPoolSendJobAsync(decimal jobTarget = 0)
         {
             CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
-            float minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
-            float maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
-            PreviousMiningJob = CurrentMiningJob;
+            decimal minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
+            decimal maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
 
-            if (ListOfJob.Count >= maxRange)
+            ListOfShare.Clear();
+            ListOfShareToFound.Clear();
+
+            #region check mining job difficulty
+            if (jobTarget < MiningPoolPortDifficulty)
             {
-                ListOfJob.Clear();
+                jobTarget = MiningPoolPortDifficulty;
             }
+            if (MiningDifficultyStart < MiningPoolPortDifficulty)
+            {
+                MiningDifficultyStart = MiningPoolPortDifficulty;
+            }
+
             if (MiningDifficultyStart > maxRange)
             {
                 MiningDifficultyStart = maxRange;
             }
+            if (MiningDifficultyStart <= minRange)
+            {
+                MiningDifficultyStart = minRange + 1;
+            }
+            if (jobTarget > maxRange)
+            {
+                jobTarget = maxRange;
+            }
+            if (jobTarget <= minRange)
+            {
+                jobTarget = minRange + 1;
+            }
+            if (CurrentHashEffort > maxRange)
+            {
+                CurrentHashEffort = maxRange;
+            }
+
+            #endregion
             if (!UseCustomDifficulty)
             {
-                if (jobTarget != 0 && (jobTarget >= ClassMiningPoolGlobalStats.CurrentBlockJobMinRange && jobTarget <= ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange))
+                if (jobTarget == 0)
                 {
-                    if (!ListOfJob.Contains(jobTarget))
+                    if (jobTarget <= maxRange)
                     {
-                        CurrentMiningJob = jobTarget;
-                        CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
-                        minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
-                        maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
+                        CurrentMinRangeJob = minRange;
+                        CurrentMaxRangeJob = jobTarget;
                     }
                     else
                     {
-                        while (CurrentMiningJob == PreviousMiningJob || ListOfJob.Contains(CurrentMiningJob) || CurrentMiningJob < minRange || CurrentMiningJob > maxRange && CurrentMiningJob == 0)
-                        {
-                            if (jobTarget <= maxRange)
-                            {
-                                CurrentMiningJob = ClassUtility.GetRandomBetweenJob(minRange, jobTarget);
-                                CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
-                                minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
-                                maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
-                            }
-                            else
-                            {
-                                CurrentMiningJob = ClassUtility.GetRandomBetweenJob(minRange, maxRange);
-                                CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
-                                minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
-                                maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
-                            }
-                        }
+                        CurrentMinRangeJob = minRange;
+                        CurrentMaxRangeJob = ClassUtility.GetRandomBetweenJob(minRange, maxRange);
                     }
                 }
                 else
                 {
-                    if (PreviousMiningJob != 0)
-                    {
-
-                        while (CurrentMiningJob == PreviousMiningJob || ListOfJob.Contains(CurrentMiningJob) || CurrentMiningJob < minRange || CurrentMiningJob > maxRange && CurrentMiningJob == 0)
-                        {
-                            if (CurrentHashEffort <= maxRange)
-                            {
-                                CurrentMiningJob = ClassUtility.GetRandomBetweenJob(minRange, CurrentHashEffort);
-                                CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
-                                minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
-                                maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
-                            }
-                            else
-                            {
-                                CurrentMiningJob = ClassUtility.GetRandomBetweenJob(minRange, maxRange);
-                                CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
-                                minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
-                                maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
-                            }
-                        }
-
-                    }
-                    else
-                    {
-                        if (MiningDifficultyStart <= maxRange)
-                        {
-                            if (MiningDifficultyStart <= maxRange)
-                            {
-                                CurrentMiningJob = MiningDifficultyStart;
-                                CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
-                                minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
-                                maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
-                            }
-                            else
-                            {
-                                CurrentMiningJob = maxRange;
-                                CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
-                                minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
-                                maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
-                            }
-                        }
-                        else
-                        {
-                            CurrentMiningJob = maxRange;
-                            CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
-                            minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
-                            maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
-                        }
-                    }
+                    CurrentMinRangeJob = minRange;
+                    CurrentMaxRangeJob = jobTarget;
                 }
             }
             else
             {
-                if (MiningDifficultyStart > 0 && MiningDifficultyStart <= maxRange)
+                if (MiningDifficultyStart > minRange && MiningDifficultyStart <= maxRange)
                 {
-                    float realDifficulty = (maxRange / MiningDifficultyStart) * ClassUtility.RandomOperatorCalculation.Length;
-                    float realJob = (float)Math.Round((maxRange / realDifficulty), 0);
-
-                    if (realJob != 0 && (realJob >= ClassMiningPoolGlobalStats.CurrentBlockJobMinRange && realJob <= ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange))
-                    {
-                        CurrentMiningJob = realJob;
-                        CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
-                        minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
-                        maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
-                    }
-                    else
-                    {
-                        while (CurrentMiningJob == PreviousMiningJob || ListOfJob.Contains(CurrentMiningJob) || CurrentMiningJob < minRange || CurrentMiningJob > maxRange && CurrentMiningJob == 0)
-                        {
-                            if (realJob <= maxRange)
-                            {
-                                CurrentMiningJob = ClassUtility.GetRandomBetweenJob(minRange, realJob);
-                                CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
-                                minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
-                                maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
-                            }
-                            else
-                            {
-                                CurrentMiningJob = ClassUtility.GetRandomBetweenJob(minRange, realJob);
-                                CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
-                                minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
-                                maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
-                            }
-                        }
-                    }
+                    CurrentMinRangeJob = minRange;
+                    CurrentMaxRangeJob = MiningDifficultyStart;
                 }
                 else
                 {
-                    while (CurrentMiningJob == PreviousMiningJob || ListOfJob.Contains(CurrentMiningJob) || CurrentMiningJob < minRange || CurrentMiningJob > maxRange && CurrentMiningJob == 0)
-                    {
-                        if (CurrentHashEffort <= maxRange)
-                        {
-                            CurrentMiningJob = ClassUtility.GetRandomBetweenJob(minRange, maxRange);
-                            CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
-                            minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
-                            maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
-                        }
-                        else
-                        {
-                            CurrentMiningJob = ClassUtility.GetRandomBetweenJob(minRange, maxRange);
-                            CurrentBlockHashOnMining = ClassMiningPoolGlobalStats.CurrentBlockHash;
-                            minRange = ClassMiningPoolGlobalStats.CurrentBlockJobMinRange;
-                            maxRange = ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange;
-                        }
-                    }
+                    CurrentMinRangeJob = minRange;
+                    CurrentMaxRangeJob = maxRange;
                 }
             }
-            ListOfJob.Add(PreviousMiningJob);
             LastJobDateReceive = ClassUtility.GetCurrentDateInSecond();
             LastShareReceived = ClassUtility.GetCurrentDateInMilliSecond();
-            TotalGoodShare = 0;
-            float currentMiningJobDifficultyTmp = CurrentMiningJob * ClassUtility.RandomOperatorCalculation.Length;
-            if (currentMiningJobDifficultyTmp > 0)
+            CurrentMiningJobDifficulty = Math.Round(CurrentMaxRangeJob, 0);
+            CurrentMinRangeJob = Math.Round(CurrentMinRangeJob, 0);
+            CurrentMaxRangeJob = Math.Round(CurrentMaxRangeJob, 0);
+            await GenerateJobAsync(CurrentMinRangeJob, CurrentMaxRangeJob);
+
+            while(CurrentShareIndicationHashJob == null)
             {
-                CurrentMiningJobDifficulty = (float)Math.Round(currentMiningJobDifficultyTmp, 0);
+                await Task.Delay(100);
             }
-            else
-            {
-                CurrentMiningJobDifficulty = maxRange;
-            }
+            string compressedMiningShareIndicationHashJob = ClassUtils.CompressData(CurrentShareIndicationHashJob);
+
             JObject jobRequest = new JObject
             {
                 ["type"] = ClassMiningPoolRequest.TypeJob,
                 [ClassMiningPoolRequest.TypeBlock] = ClassMiningPoolGlobalStats.CurrentBlockId,
                 [ClassMiningPoolRequest.TypeBlockTimestampCreate] = ClassMiningPoolGlobalStats.CurrentBlockTimestampCreate,
                 [ClassMiningPoolRequest.TypeBlockKey] = ClassMiningPoolGlobalStats.CurrentBlockKey,
-                [ClassMiningPoolRequest.TypeResult] = CurrentMiningJob,
-                [ClassMiningPoolRequest.TypeMinRange] = minRange,
-                [ClassMiningPoolRequest.TypeMaxRange] = maxRange,
+                [ClassMiningPoolRequest.TypeJobIndication] = compressedMiningShareIndicationHashJob,
+                [ClassMiningPoolRequest.TypeJobDifficulty] = CurrentMiningJobDifficulty,
+                [ClassMiningPoolRequest.TypeMinRange] = CurrentMinRangeJob,
+                [ClassMiningPoolRequest.TypeMaxRange] = CurrentMaxRangeJob,
                 [ClassMiningPoolRequest.TypeJobMiningMethodName] = ClassMiningPoolGlobalStats.CurrentBlockMethod,
                 [ClassMiningPoolRequest.TypeBlockIndication] = ClassMiningPoolGlobalStats.CurrentBlockIndication,
+                [ClassMiningPoolRequest.TypeBlockDifficulty] = ClassMiningPoolGlobalStats.CurrentBlockDifficulty,
                 [ClassMiningPoolRequest.TypeJobMiningMethodAesRound] = ClassMiningPoolGlobalStats.CurrentRoundAesRound,
                 [ClassMiningPoolRequest.TypeJobMiningMethodAesSize] = ClassMiningPoolGlobalStats.CurrentRoundAesSize,
                 [ClassMiningPoolRequest.TypeJobMiningMethodAesKey] = ClassMiningPoolGlobalStats.CurrentRoundAesKey,
-                [ClassMiningPoolRequest.TypeJobMiningMethodXorKey] = ClassMiningPoolGlobalStats.CurrentRoundXorKey,
-                [ClassMiningPoolRequest.TypeJobDifficulty] = CurrentMiningJobDifficulty
+                [ClassMiningPoolRequest.TypeJobMiningMethodXorKey] = ClassMiningPoolGlobalStats.CurrentRoundXorKey
             };
             try
             {
@@ -433,6 +373,169 @@ namespace Xiropht_Mining_Pool.Mining
         }
 
         /// <summary>
+        /// Calculate Hashrate;
+        /// </summary>
+        private async Task CalculateHashrateAsync()
+        {
+            while (IsConnected && IsLogged)
+            {
+
+                if (TotalMiningScore > 0)
+                {
+                    decimal timeSpendConnected = ClassUtility.GetCurrentDateInSecond() - LoginDate;
+                    decimal lastShareReceived = ClassUtility.GetCurrentDateInSecond() - (LastShareReceived / 1000.0m);
+                    timeSpendConnected -= lastShareReceived;
+                    if (timeSpendConnected <= 0)
+                    {
+                        timeSpendConnected = 1;
+                    }
+                    decimal tmpCurrentHashrate = ((TotalMiningScore / timeSpendConnected) * ((ClassUtility.RandomOperatorCalculation.Length * 2)));
+
+                    if (tmpCurrentHashrate < 0)
+                    {
+                        tmpCurrentHashrate = 0;
+                    }
+                    else
+                    {
+                        CurrentHashrate = tmpCurrentHashrate;
+                    }
+
+                }
+
+
+
+                await Task.Delay(1000);
+            }
+        }
+
+        /// <summary>
+        /// Generate a math calculation possibility.
+        /// </summary>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <returns></returns>
+        private async Task GenerateJobAsync(decimal min, decimal max)
+        {
+            bool jobGenerated = false;
+#if DEBUG
+            Console.WriteLine("Job max range selected:" + max);
+            Console.WriteLine("Job min range selected:" + min);
+#endif
+
+            int totalRandomJobToFound = ClassUtility.GetRandomBetween(2, 8);
+            string currentMiningJobHashIndication = string.Empty;
+            while (!jobGenerated)
+            {
+                if(!IsConnected || !IsLogged)
+                {
+                    break;
+                }
+                
+                string calculation = string.Empty;
+                string randomMathOperator = string.Empty;
+                decimal resultCalculation = 0;
+                string firstNumber = "0";
+                string secondNumber = "0";
+
+                while (decimal.Parse(firstNumber) < min || decimal.Parse(firstNumber) > max || decimal.Parse(secondNumber) < min|| decimal.Parse(secondNumber) > max)
+                {
+
+
+                    firstNumber = ClassUtility.GenerateNumberMathCalculation(min, max);
+                    secondNumber = ClassUtility.GenerateNumberMathCalculation(min, max);
+
+                    randomMathOperator = ClassUtility.RandomOperatorCalculation[ClassUtility.GetRandomBetween(0, ClassUtility.RandomOperatorCalculation.Length - 1)];
+                    resultCalculation = ClassUtility.ComputeCalculation(firstNumber, randomMathOperator, secondNumber);
+                    if (resultCalculation >= min && resultCalculation <= ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange)
+                    {
+                        if (resultCalculation - Math.Round(resultCalculation, 0) != 0)
+                        {
+                            firstNumber = "0";
+                            secondNumber = "0";
+                        }
+                    }
+                    else
+                    {
+                        var tmpFirstNumber = firstNumber;
+                        var tmpSecondNumber = secondNumber;
+
+                        resultCalculation = ClassUtility.ComputeCalculation(secondNumber, randomMathOperator, firstNumber);
+                        secondNumber = tmpFirstNumber;
+                        firstNumber = tmpSecondNumber;
+                        if (resultCalculation >= min && resultCalculation <= ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange)
+                        {
+                            if (resultCalculation - Math.Round(resultCalculation, 0) != 0)
+                            {
+                                firstNumber = "0";
+                                secondNumber = "0";
+                            }
+                        }
+                    }
+                }
+            
+                
+
+                calculation = firstNumber + " " + randomMathOperator + " " + secondNumber;
+                string encryptedShare = ClassUtility.StringToHexString(calculation + ClassMiningPoolGlobalStats.CurrentBlockTimestampCreate);
+
+                encryptedShare = ClassUtility.EncryptXorShare(encryptedShare, ClassMiningPoolGlobalStats.CurrentRoundXorKey.ToString());
+                for (int i = 0; i < ClassMiningPoolGlobalStats.CurrentRoundAesRound; i++)
+                {
+                    encryptedShare = ClassUtility.EncryptAesShareAsync(encryptedShare, ClassMiningPoolGlobalStats.CurrentBlockKey, Encoding.UTF8.GetBytes(ClassMiningPoolGlobalStats.CurrentRoundAesKey), ClassMiningPoolGlobalStats.CurrentRoundAesSize);
+                }
+                encryptedShare = ClassUtility.EncryptXorShare(encryptedShare, ClassMiningPoolGlobalStats.CurrentRoundXorKey.ToString());
+                encryptedShare = ClassUtility.EncryptAesShareAsync(encryptedShare, ClassMiningPoolGlobalStats.CurrentBlockKey, Encoding.UTF8.GetBytes(ClassMiningPoolGlobalStats.CurrentRoundAesKey), ClassMiningPoolGlobalStats.CurrentRoundAesSize);
+                encryptedShare = ClassUtility.GenerateSHA512(encryptedShare);
+                if (!ListOfShareToFound.ContainsKey(encryptedShare))
+                {
+                    string shareHashIndication = ClassUtility.GenerateSHA512(encryptedShare);
+                    if (shareHashIndication == ClassMiningPoolGlobalStats.CurrentBlockIndication)
+                    {
+                        ClassLog.ConsoleWriteLog("Lol ! the pool seems to have found the block " + ClassMiningPoolGlobalStats.CurrentBlockId + " himself, waiting confirmation.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
+                        await Task.Factory.StartNew(() => ClassNetworkBlockchain.SendPacketBlockFound(encryptedShare, resultCalculation, calculation, shareHashIndication), CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, PriorityScheduler.AboveNormal).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        if (ListOfShareToFound.Count >= totalRandomJobToFound)
+                        {
+                            jobGenerated = true;
+                            bool blockHashIndicationPut = false;
+
+                            foreach (var shareToFound in ListOfShareToFound)
+                            {
+                                if (ClassUtils.GetRandomBetween(1, 100) >= 70)
+                                {
+                                    if (!blockHashIndicationPut)
+                                    {
+                                        blockHashIndicationPut = true;
+                                        currentMiningJobHashIndication += ClassMiningPoolGlobalStats.CurrentBlockIndication + shareToFound.Value.Item1;
+                                    }
+                                }
+                                else
+                                {
+                                    currentMiningJobHashIndication += shareToFound.Value.Item1;
+                                }
+                            }
+                            if (!blockHashIndicationPut)
+                            {
+                                currentMiningJobHashIndication += ClassMiningPoolGlobalStats.CurrentBlockIndication;
+                            }
+                            CurrentShareIndicationHashJob = currentMiningJobHashIndication;
+                            break;
+                        }
+                        else
+                        {
+                            ListOfShareToFound.Add(encryptedShare, new Tuple<string, string>(shareHashIndication, calculation));
+                        }
+                    }
+                }
+            }
+#if DEBUG
+            Console.WriteLine("Job generated");
+#endif
+        }
+
+        /// <summary>
         /// Check share received.
         /// </summary>
         /// <param name="result"></param>
@@ -440,48 +543,62 @@ namespace Xiropht_Mining_Pool.Mining
         /// <param name="share"></param>
         /// <param name="hash"></param>
         /// <returns></returns>
-        private string CheckMinerShare(float result, string mathCalculation, string share, string hash, bool trustedShare)
+        private Tuple<string, decimal> CheckMinerShare(decimal result, string mathCalculation, string share, string hash, bool trustedShare)
         {
+            if (ListOfShareToFound.Count == 0)
+            {
+                return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareDuplicate, CurrentMiningJobDifficulty);
+            }
             TotalShareReceived++;
             if (hash != ClassMiningPoolGlobalStats.CurrentBlockIndication)
             {
+                if (hash.Length != ClassMiningPoolGlobalStats.CurrentBlockIndication.Length)
+                {
+                    return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
+                }
                 if (ListOfShare.ContainsKey(share))
                 {
-                    return ClassMiningPoolRequest.TypeResultShareDuplicate;
+                    return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareDuplicate, CurrentMiningJobDifficulty);
                 }
-
-
-                if (PreviousMiningJob != 0)
+                if (ListOfShare.ContainsValue(hash))
                 {
-                    if (result != CurrentMiningJob && result != PreviousMiningJob)
+                    return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareDuplicate, CurrentMiningJobDifficulty);
+                }
+                bool existShareHashIndication = false;
+                foreach(var shareIndication in ListOfShareToFound)
+                {
+                    if (shareIndication.Value.Item1 == hash)
                     {
-                        return ClassMiningPoolRequest.TypeResultShareInvalid;
+                        existShareHashIndication = true;
                     }
                 }
-                else
+                if (CurrentShareIndicationHashJob.Contains(hash))
                 {
-                    if (result != CurrentMiningJob)
-                    {
-                        return ClassMiningPoolRequest.TypeResultShareInvalid;
-                    }
+                    existShareHashIndication = true;
+                }
+                if (!existShareHashIndication)
+                {
+                    return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
                 }
             }
+
             var splitMathCalculation = mathCalculation.Split(new[] { " " }, StringSplitOptions.None);
-            if (float.Parse(splitMathCalculation[0]) >= ClassMiningPoolGlobalStats.CurrentBlockJobMinRange && float.Parse(splitMathCalculation[0]) <= ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange)
+            if (decimal.Parse(splitMathCalculation[0]) >= ClassMiningPoolGlobalStats.CurrentBlockJobMinRange && decimal.Parse(splitMathCalculation[0]) <= ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange)
             {
-                if (float.Parse(splitMathCalculation[2]) >= ClassMiningPoolGlobalStats.CurrentBlockJobMinRange && float.Parse(splitMathCalculation[2]) <= ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange)
+                if (decimal.Parse(splitMathCalculation[2]) >= ClassMiningPoolGlobalStats.CurrentBlockJobMinRange && decimal.Parse(splitMathCalculation[2]) <= ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange)
                 {
                     if (result > ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange)
                     {
-                        return ClassMiningPoolRequest.TypeResultShareInvalid;
+                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
                     }
                     if (result < ClassMiningPoolGlobalStats.CurrentBlockJobMinRange)
                     {
-                        return ClassMiningPoolRequest.TypeResultShareInvalid;
+                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
                     }
+
                     if (ClassUtility.ComputeCalculation(splitMathCalculation[0], splitMathCalculation[1], splitMathCalculation[2]) != result)
                     {
-                        return ClassMiningPoolRequest.TypeResultShareInvalid;
+                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
                     }
 
 
@@ -489,14 +606,14 @@ namespace Xiropht_Mining_Pool.Mining
 
                     if (reverseShare.Length != 96)
                     {
-                        return ClassMiningPoolRequest.TypeResultShareInvalid;
+                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
                     }
 
                     byte[] reverseHash = Convert.FromBase64String(hash);
 
                     if (reverseShare.Length != 96)
                     {
-                        return ClassMiningPoolRequest.TypeResultShareInvalid;
+                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
                     }
 
                     if (!trustedShare)
@@ -514,14 +631,14 @@ namespace Xiropht_Mining_Pool.Mining
 
                         if (encryptedShare != share)
                         {
-                            return ClassMiningPoolRequest.TypeResultShareInvalid;
+                            return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
                         }
 
                         string hashShare = ClassUtility.GenerateSHA512(encryptedShare);
 
                         if (hashShare != hash)
                         {
-                            return ClassMiningPoolRequest.TypeResultShareInvalid;
+                            return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
                         }
                     }
 
@@ -533,31 +650,68 @@ namespace Xiropht_Mining_Pool.Mining
                     {
                         if (!ListOfShare.ContainsKey(share))
                         {
-                            ListOfShare.Add(share, CurrentMiningJob);
+                            ListOfShare.Add(share, hash);
                         }
                         else
                         {
-                            return ClassMiningPoolRequest.TypeResultShareDuplicate;
+                            return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareDuplicate, CurrentMiningJobDifficulty);
                         }
                     }
                     catch
                     {
-                        return ClassMiningPoolRequest.TypeResultShareDuplicate;
+                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareDuplicate, CurrentMiningJobDifficulty);
+                    }
+                    LastShareReceived = ClassUtility.GetCurrentDateInMilliSecond();
+                    decimal difference = (LastShareReceived / 1000.0m) - LastJobDateReceive;
+                    decimal timespendOnShare = ClassUtility.GetCurrentDateInSecond() - LastJobDateReceive;
+                    LastShareDifficultyDone = CurrentMiningJobDifficulty;
+
+                    if (difference >= 1)
+                    {
+                        decimal factorScore = (CurrentMiningJobDifficulty * difference) / 100;
+                        decimal miningScore = Math.Round((CurrentMiningJobDifficulty - factorScore), 0);
+                        decimal newDifficulty = Math.Round(CurrentMiningJobDifficulty + ((miningScore / CurrentMiningJobDifficulty) * 100), 0);
+                        decimal totalPossibility = ((CurrentMiningJobDifficulty / CurrentMinRangeJob) * ClassUtility.RandomOperatorCalculation.Length);
+
+                        if (miningScore <= CurrentMiningJobDifficulty && miningScore > 0)
+                        {
+
+                            TotalMiningScore += Math.Round(miningScore, 0);
+
+                        }
+                        if (newDifficulty >= CurrentMiningJobDifficulty * 4)
+                        {
+                            UseCustomDifficulty = false;
+                        }
+                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareOk, newDifficulty);
+                    }
+                    else
+                    {
+                        decimal miningScore = Math.Round((CurrentMiningJobDifficulty * difference), 0);
+                        decimal newDifficulty = Math.Round((CurrentMiningJobDifficulty / difference), 0);
+
+                        if (miningScore <= CurrentMiningJobDifficulty && miningScore > 0)
+                        {
+                            TotalMiningScore += Math.Round(miningScore, 0);
+                        }
+                        if (newDifficulty >= CurrentMiningJobDifficulty * 4)
+                        {
+                            UseCustomDifficulty = false;
+                        }
+                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareOk, newDifficulty);
                     }
 
-                    TotalMiningScore += CurrentMiningJobDifficulty;
-                    return ClassMiningPoolRequest.TypeResultShareOk;
                 }
                 else
                 {
-                    ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " bad number used: "+splitMathCalculation[2], ClassLogEnumeration.IndexPoolMinerErrorLog);
-                    return ClassMiningPoolRequest.TypeResultShareLowDifficulty;
+                    ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " bad number used: " + splitMathCalculation[2], ClassLogEnumeration.IndexPoolMinerErrorLog);
+                    return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareLowDifficulty, CurrentMiningJobDifficulty);
                 }
             }
             else
             {
                 ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " bad number used: " + splitMathCalculation[0], ClassLogEnumeration.IndexPoolMinerErrorLog);
-                return ClassMiningPoolRequest.TypeResultShareLowDifficulty;
+                return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareLowDifficulty, CurrentMiningJobDifficulty);
             }
         }
 
@@ -569,92 +723,14 @@ namespace Xiropht_Mining_Pool.Mining
         /// <param name="share"></param>
         /// <param name="hash"></param>
         /// <returns></returns>
-        private async void CheckShareHashWithBlockIndicationAsync(float result, string mathCalculation, string share, string hash)
+        private async void CheckShareHashWithBlockIndicationAsync(decimal result, string mathCalculation, string share, string hash)
         {
             ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " seems to have found the block " + ClassMiningPoolGlobalStats.CurrentBlockId + ", waiting confirmation.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
             await Task.Factory.StartNew(() => ClassNetworkBlockchain.SendPacketBlockFound(share, result, mathCalculation, hash), CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, PriorityScheduler.AboveNormal).ConfigureAwait(false);
         }
 
-        /// <summary>
-        /// Calculate the hashrate of the miner.
-        /// </summary>
-        /// <returns></returns>
-        private async Task CalculateHashrate()
-        {
-            while (IsConnected && IsLogged)
-            {
-                try
-                {
 
-                    float lastJobReceived = ((ClassUtility.GetCurrentDateInSecond() - LastJobDateReceive));
-                    float timeSpendConnected = ClassUtility.GetCurrentDateInSecond() - LoginDate;
-                    float lastShareReceived = ((ClassUtility.GetCurrentDateInMilliSecond() - LastShareReceived) / 1000.0f);
-                    float totalSharePerSecond = TotalGoodShareDone / timeSpendConnected;
-                    float maxRangePossibility = (ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange / ClassMiningPoolGlobalStats.CurrentBlockJobMinRange) * ClassUtility.RandomOperatorCalculation.Length;
-                    float maxJobPossibility = (ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange / CurrentMiningJob) * ClassUtility.RandomOperatorCalculation.Length;
-                    float maxJobDoneInSecond = (maxJobPossibility / totalSharePerSecond);
-                    float totalJobDone = maxJobPossibility * totalSharePerSecond;
-                    float maxRangeDoneInSecond = maxRangePossibility / totalSharePerSecond;
-                    float miningEffortPourcent = (maxJobDoneInSecond / maxRangeDoneInSecond) * 100;
-                    float miningBestJob = (float)Math.Round((CurrentMiningJobDifficulty * totalSharePerSecond) * miningEffortPourcent, 0);
-
-                    #region calculation comments
-                    //Console.WriteLine("Current Mining Job: " + CurrentMiningJob);
-                    //Console.WriteLine("Current Max Range Job: " + ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange);
-                    //Console.WriteLine("Total good share done: " + TotalGoodShareDone);
-                    //Console.WriteLine("Total Good Share Per Second: " + totalSharePerSecond);
-                    //Console.WriteLine("Max Range Possibility: " + maxRangePossibility);
-                    //Console.WriteLine("Max Job Possibility: " + maxJobPossibility);
-                    //Console.WriteLine("Job total possibility done in: " + maxJobDoneInSecond + " second(s)");
-                    //Console.WriteLine("Max total possibility can be done in: " + maxRangeDoneInSecond + " second(s)");
-                    //Console.WriteLine("Mining Effort Difficulty pourcent: " + miningEffortPourcent + " %");
-                    //Console.WriteLine("Mining Best Job Difficulty to target: " + miningBestJob);
-                    #endregion
-
-                    float estimatedHashrate = ((TotalMiningScore / timeSpendConnected) * ((ClassUtility.RandomOperatorCalculation.Length * 2)) / 2) / 1.75f; // Total math operator * 2 combinaison (normal & inverted math calculation)
-                    if (estimatedHashrate != float.PositiveInfinity && estimatedHashrate != float.NegativeInfinity && !float.IsNaN(estimatedHashrate))
-                    {
-                        if (estimatedHashrate > 0)
-                        {
-                            CurrentHashrate = estimatedHashrate;
-                        }
-                    }
-
-                    if (miningBestJob > ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange)
-                    {
-                        ClassMinerStats.InsertInvalidShareToMiner(MinerWalletAddress);
-                        EndMinerConnection();
-                    }
-                    else
-                    {
-                        CurrentHashEffort = miningBestJob;
-
-                        if (!UseCustomDifficulty || totalSharePerSecond > 5 || (miningBestJob > CurrentMiningJob * 5)) // Change the difficulty if the miner don't use a custom difficulty or send too much share per second for prevent flood and overloading.
-                        {
-                            UseCustomDifficulty = false;
-                            if (miningBestJob * 5 < CurrentMiningJob)
-                            {
-                                MiningPoolSendJobAsync(miningBestJob);
-                            }
-                            else
-                            {
-                                if (miningBestJob > CurrentMiningJob * 5)
-                                {
-                                    MiningPoolSendJobAsync(miningBestJob);
-                                }
-                            }
-                        }
-                    }
-                }
-                catch
-                {
-
-                }
-                await Task.Delay(1000);
-            }
-        }
-
-        #endregion
+#endregion
 
         #region Network Functions
 
@@ -662,13 +738,13 @@ namespace Xiropht_Mining_Pool.Mining
         /// Handle incoming miner, check if his ip is banned.
         /// </summary>
         /// <returns></returns>
-        public async Task HandleIncomingMiner(int miningPoolPort, float difficultyStart)
+        public async Task HandleIncomingMiner(int miningPoolPort, decimal difficultyStart)
         {
             MiningDifficultyStart = difficultyStart;
             Ip = ((IPEndPoint)(TcpMiner.Client.RemoteEndPoint)).Address.ToString();
             ClassLog.ConsoleWriteLog("Incoming miner connection IP " + Ip + " on mining pool port: " + miningPoolPort + " with difficulty start of: "+MiningDifficultyStart, ClassLogEnumeration.IndexPoolMinerLog);
 
-            if (!ClassFilteringMiner.CheckMinerIsBannedByIP(Ip)) // The miner IP is not banned.
+            if (!ClassFilteringMiner.CheckMinerIsBannedByIP(Ip) && !string.IsNullOrEmpty(ClassMiningPoolGlobalStats.CurrentBlockId)) // The miner IP is not banned.
             {
                 TcpMiner.SetSocketKeepAliveValues(20 * 60 * 1000, 30 * 1000);
                 IsConnected = true;
@@ -806,8 +882,13 @@ namespace Xiropht_Mining_Pool.Mining
                                                 { ClassMiningPoolRequest.TypeLoginOk, "login accepted." }
                                             };
                                             await SendPacketToMiner(jsonLoginOkPacket.ToString(Formatting.None));
-                                            await Task.Factory.StartNew(CalculateHashrate, CancellationToken.None, TaskCreationOptions.LongRunning, PriorityScheduler.Lowest).ConfigureAwait(false);
-                                            MiningPoolSendJobAsync(MiningDifficultyStart);
+                                            LastShareReceived = ClassUtility.GetCurrentDateInMilliSecond();
+                                            await Task.Factory.StartNew(() => CalculateHashrateAsync(), CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                            TotalGoodShareDone++;
+                                            if (ListOfShare.Count >= ListOfShareToFound.Count)
+                                            {
+                                                await Task.Factory.StartNew(() => MiningPoolSendJobAsync(MiningDifficultyStart), CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                            }
                                         }
                                         else
                                         {
@@ -866,8 +947,13 @@ namespace Xiropht_Mining_Pool.Mining
                                             };
                                             await SendPacketToMiner(jsonLoginOkPacket.ToString(Formatting.None));
                                             ClassMinerStats.InsertMinerTcpObject(MinerWalletAddress, this);
-                                            await Task.Factory.StartNew(CalculateHashrate, CancellationToken.None, TaskCreationOptions.LongRunning, PriorityScheduler.Lowest).ConfigureAwait(false);
-                                            MiningPoolSendJobAsync(MiningDifficultyStart);
+                                            LastShareReceived = ClassUtility.GetCurrentDateInMilliSecond();
+                                            await Task.Factory.StartNew(() => CalculateHashrateAsync(), CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                            TotalGoodShareDone++;
+                                            if (ListOfShare.Count >= ListOfShareToFound.Count)
+                                            {
+                                                await Task.Factory.StartNew(() => MiningPoolSendJobAsync(MiningDifficultyStart), CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                            }
                                         }
                                         else
                                         {
@@ -906,7 +992,7 @@ namespace Xiropht_Mining_Pool.Mining
                             else
                             {
                                 LastShareReceived = ClassUtility.GetCurrentDateInMilliSecond();
-                                float result = float.Parse(packetJson[ClassMiningPoolRequest.SubmitResult].ToString());
+                                decimal result = decimal.Parse(packetJson[ClassMiningPoolRequest.SubmitResult].ToString());
                                 string firstNumber = packetJson[ClassMiningPoolRequest.SubmitFirstNumber].ToString();
                                 string secondNumber = packetJson[ClassMiningPoolRequest.SubmitSecondNumber].ToString();
                                 string operatorMath = packetJson[ClassMiningPoolRequest.SubmitOperator].ToString();
@@ -917,7 +1003,8 @@ namespace Xiropht_Mining_Pool.Mining
                                 {
                                     if (ClassMinerStats.CheckMinerIsTrusted(MinerWalletAddress))
                                     {
-                                        switch (CheckMinerShare(result, mathCalculation, share, hash, true))
+                                        var checkMinerShareResult = CheckMinerShare(result, mathCalculation, share, hash, true);
+                                        switch (checkMinerShareResult.Item1)
                                         {
                                             case ClassMiningPoolRequest.TypeResultShareInvalid:
 
@@ -966,7 +1053,6 @@ namespace Xiropht_Mining_Pool.Mining
                                                 ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " trusted share accepted. Job: " + CurrentMiningJobDifficulty + "/" + ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange, ClassLogEnumeration.IndexPoolMinerLog);
                                                 ClassMinerStats.InsertGoodShareToMiner(MinerWalletAddress, CurrentMiningJobDifficulty);
                                                 CheckShareHashWithBlockIndicationAsync(result, mathCalculation, share, hash);
-                                                TotalGoodShare++;
                                                 TotalGoodShareDone++;
 
                                                 JObject jobRequest = new JObject
@@ -978,13 +1064,21 @@ namespace Xiropht_Mining_Pool.Mining
                                                 {
                                                     EndMinerConnection();
                                                 }
+                                                TotalGoodShareDone++;
+
+                                                if (ListOfShare.Count >= ListOfShareToFound.Count)
+                                                {
+                                                    await Task.Factory.StartNew(() => MiningPoolSendJobAsync(checkMinerShareResult.Item2), CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                                }
+
                                                 break;
                                         }
   
                                     }
                                     else
                                     {
-                                        switch (CheckMinerShare(result, mathCalculation, share, hash, false))
+                                        var checkMinerShareResult = CheckMinerShare(result, mathCalculation, share, hash, false);
+                                        switch (checkMinerShareResult.Item1)
                                         {
                                             case ClassMiningPoolRequest.TypeResultShareInvalid:
 
@@ -1042,15 +1136,19 @@ namespace Xiropht_Mining_Pool.Mining
 
                                                 ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " good share accepted. Job: " + CurrentMiningJobDifficulty + "/" + ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange, ClassLogEnumeration.IndexPoolMinerLog);
                                                 ClassMinerStats.InsertGoodShareToMiner(MinerWalletAddress, CurrentMiningJobDifficulty);
-                                                TotalGoodShare++;
                                                 TotalGoodShareDone++;
+                                                if (ListOfShare.Count >= ListOfShareToFound.Count)
+                                                {
+                                                    await Task.Factory.StartNew(() => MiningPoolSendJobAsync(checkMinerShareResult.Item2), CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                                }
                                                 break;
                                         }
                                     }
                                 }
                                 else
                                 {
-                                    switch (CheckMinerShare(result, mathCalculation, share, hash, false))
+                                    var checkMinerShareResult = CheckMinerShare(result, mathCalculation, share, hash, false);
+                                    switch (checkMinerShareResult.Item1)
                                     {
                                         case ClassMiningPoolRequest.TypeResultShareInvalid:
                                             ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " send a invalid share.", ClassLogEnumeration.IndexPoolMinerErrorLog);
@@ -1105,10 +1203,10 @@ namespace Xiropht_Mining_Pool.Mining
                                                 EndMinerConnection();
                                             }
 
-                                            ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " good share accepted. Job: " + CurrentMiningJobDifficulty + "/" + ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange, ClassLogEnumeration.IndexPoolMinerLog);
+                                            ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " good share accepted. Job: " + CurrentMiningJobDifficulty + "/" + ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange + " share received:"+packetReceived, ClassLogEnumeration.IndexPoolMinerLog);
                                             ClassMinerStats.InsertGoodShareToMiner(MinerWalletAddress, CurrentMiningJobDifficulty);
-                                            TotalGoodShare++;
                                             TotalGoodShareDone++;
+                                            await Task.Factory.StartNew(() => MiningPoolSendJobAsync(checkMinerShareResult.Item2), CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
                                             break;
                                     }
                                 }
@@ -1169,31 +1267,30 @@ namespace Xiropht_Mining_Pool.Mining
                                 break;
                             }
                         }
-                        if (LastShareReceived + (MiningPoolSetting.MiningPoolIntervalChangeJob * 1000) < ClassUtility.GetCurrentDateInMilliSecond())
+                        if (LastShareReceived + (MiningPoolSetting.MiningPoolTimeout * 1000.0m) < ClassUtility.GetCurrentDateInMilliSecond())
                         {
-                            MiningPoolSendJobAsync(0);
+                            IsConnected = false;
+                            break;
                         }
-                        if (CurrentBlockHashOnMining != ClassMiningPoolGlobalStats.CurrentBlockHash || CurrentMiningJob == 0)
+                        if (LastShareReceived + (MiningPoolSetting.MiningPoolIntervalChangeJob * 1000.0m) < ClassUtility.GetCurrentDateInMilliSecond())
                         {
-                            ListOfJob.Clear();
-                            MiningPoolSendJobAsync(0);
-                        }
-                        else
-                        {
-                            if (TotalGoodShare > 0)
+                            var timeSpendWithoutShare = ClassUtility.GetCurrentDateInSecond() - (LastShareReceived / 1000m);
+                            if (timeSpendWithoutShare >= 1)
                             {
-                                float maxExpectedShare = (ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange / CurrentMiningJob) * ClassUtility.RandomOperatorCalculation.Length;
-                                maxExpectedShare = (int)Math.Round(maxExpectedShare);
-                                if (maxExpectedShare > 1)
+                                decimal tmpcurrentHashrate = CurrentHashrate - ((CurrentHashrate * timeSpendWithoutShare) / 100);
+                                decimal tmpcurrentMiningJob = CurrentMiningJobDifficulty - ((CurrentMiningJobDifficulty * timeSpendWithoutShare) / 100);
+                                if (tmpcurrentMiningJob < CurrentMiningJobDifficulty && tmpcurrentHashrate > 0)
                                 {
-                                    maxExpectedShare--;
-                                }
-                                if (TotalGoodShare + 1 >= maxExpectedShare - 1)
-                                {
-                                    MiningPoolSendJobAsync(0);
+                                    await Task.Factory.StartNew(() => MiningPoolSendJobAsync(tmpcurrentMiningJob), CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
                                 }
                             }
                         }
+
+                        if (CurrentBlockHashOnMining != ClassMiningPoolGlobalStats.CurrentBlockHash || CurrentMiningJobDifficulty == 0)
+                        {
+                            await Task.Factory.StartNew(() => MiningPoolSendJobAsync(CurrentMiningJobDifficulty), CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
+                        }
+
                         JObject requestKeepAlive = new JObject
                         {
                             ["type"] = ClassMiningPoolRequest.TypeKeepAlive,
@@ -1289,7 +1386,7 @@ namespace Xiropht_Mining_Pool.Mining
             return true;
         }
 
-        #endregion
+#endregion
 
     }
 

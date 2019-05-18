@@ -15,7 +15,7 @@ namespace Xiropht_Mining_Pool.Setting
         /// <summary>
         /// Mining pool list of mining port(s).
         /// </summary>
-        public static Dictionary<int, float> MiningPoolMiningPort = new Dictionary<int, float>();
+        public static Dictionary<int, decimal> MiningPoolMiningPort = new Dictionary<int, decimal>();
 
         /// <summary>
 
@@ -72,12 +72,17 @@ namespace Xiropht_Mining_Pool.Setting
         /// <summary>
         /// Interval of time for change mining job if the miner make too much time for found a share. For example if you set 15 seconds and the miner don't found any share, the pool will send another job.
         /// </summary>
-        public static int MiningPoolIntervalChangeJob;
+        public static decimal MiningPoolIntervalChangeJob;
 
         /// <summary>
         /// Maximum of time of waiting a response from a miner. If the time is reach the miner is disconnected.
         /// </summary>
         public static int MiningPoolTimeout;
+
+        /// <summary>
+        /// Maximum of total ban accepted by the pool before to deny everything (mining score, payments, shares).
+        /// </summary>
+        public static int MiningPoolMaxTotalBanMiner = 5;
 
         #endregion
 

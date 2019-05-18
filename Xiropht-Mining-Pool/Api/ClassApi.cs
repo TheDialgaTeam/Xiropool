@@ -454,10 +454,11 @@ namespace Xiropht_Mining_Pool.Api
                                 float totalInvalidShare = 0;
                                 string totalBalance = "0";
                                 string totalPaid = "0";
-                                float totalHashrate = 0;
-                                float totalMiningScore = 0;
-                                float totalMiningScorePool = 0;
+                                decimal totalHashrate = 0;
+                                decimal totalMiningScore = 0;
+                                decimal totalMiningScorePool = 0;
                                 decimal customMinimumPayment = 0;
+                                long lastShareReceived = 0;
 
                                 if (ClassMinerStats.DictionaryMinerTransaction.ContainsKey(splitPacket[1]))
                                 {
@@ -470,11 +471,15 @@ namespace Xiropht_Mining_Pool.Api
                                 totalHashrate = ClassMinerStats.DictionaryMinerStats[splitPacket[1]].CurrentTotalHashrate;
                                 totalMiningScore = ClassMinerStats.DictionaryMinerStats[splitPacket[1]].TotalMiningScore;
                                 customMinimumPayment = ClassMinerStats.DictionaryMinerStats[splitPacket[1]].CustomMinimumPayment;
+                                lastShareReceived = ClassMinerStats.DictionaryMinerStats[splitPacket[1]].DateOfLastGoodShare;
                                 foreach(var minerStats in ClassMinerStats.DictionaryMinerStats)
                                 {
-                                    if (minerStats.Value.TotalMiningScore > 0)
+                                    if (minerStats.Value.TotalBan <= MiningPoolSetting.MiningPoolMaxTotalBanMiner)
                                     {
-                                        totalMiningScorePool += minerStats.Value.TotalMiningScore;
+                                        if (minerStats.Value.TotalMiningScore > 0)
+                                        {
+                                            totalMiningScorePool += minerStats.Value.TotalMiningScore;
+                                        }
                                     }
                                 }
                                 Dictionary<string, string> minerStatsContent = new Dictionary<string, string>()
@@ -488,7 +493,8 @@ namespace Xiropht_Mining_Pool.Api
                                     {"wallet_total_payment", ""+totalPayment },
                                     {"wallet_total_mining_score", totalMiningScore.ToString("F0") },
                                     {"wallet_total_pool_mining_score", totalMiningScorePool.ToString("F0") },
-                                    {"wallet_custom_minimum_payment", ""+customMinimumPayment }
+                                    {"wallet_custom_minimum_payment", ""+customMinimumPayment },
+                                    {"wallet_last_share_received",  ""+lastShareReceived}
                                 };
                                 await BuildAndSendHttpPacketAsync(string.Empty, true, minerStatsContent);
                                 break;
@@ -508,7 +514,7 @@ namespace Xiropht_Mining_Pool.Api
                         {
                             if (ClassMinerStats.DictionaryMinerStats.ContainsKey(splitPacket[1]))
                             {
-                                var customMinimumPaymentString = ClassUtility.FormatMaxDecimalPlace(splitPacket[2]).Replace(".", ",");
+                                var customMinimumPaymentString = ClassUtility.FormatMaxDecimalPlace(splitPacket[2].Replace(".", ",")).Replace(".", ",");
                                 if (decimal.TryParse(customMinimumPaymentString, NumberStyles.Currency, Program.GlobalCultureInfo, out var customMinimumPayment))
                                 {
                                     if (customMinimumPayment >= MiningPoolSetting.MiningPoolMinimumBalancePayment)
@@ -625,25 +631,24 @@ namespace Xiropht_Mining_Pool.Api
                                 }
                             }
                             Dictionary<string, string> poolStatsContent = new Dictionary<string, string>()
-                        {
-                            {"pool_hashrate", "" + ClassMiningPoolGlobalStats.TotalMinerHashrate },
-                            {"pool_total_miner_connected", "" + ClassMiningPoolGlobalStats.TotalMinerConnected },
-                            {"pool_total_worker_connected", "" + ClassMiningPoolGlobalStats.TotalWorkerConnected },
-                            {"pool_total_payment", "" + ClassMinerStats.DictionaryPoolTransaction.Count },
-                            {"pool_total_paid", ClassMiningPoolGlobalStats.PoolTotalPaid.ToString("F"+ClassConnectorSetting.MaxDecimalPlace) },
-                            {"pool_total_block_found", "" + ClassMiningPoolGlobalStats.ListBlockFound.Count },
-                            {"pool_fee", ""+MiningPoolSetting.MiningPoolFee },
-                            {"pool_last_block_found_date",  lastBlockFoundDate},
-                            {"pool_mining_port_and_difficulty", miningPortInfo },
-                            {"pool_minimum_payment", "" + MiningPoolSetting.MiningPoolMinimumBalancePayment },
-                            {"network_height", ClassMiningPoolGlobalStats.CurrentBlockId },
-                            {"network_difficulty", ClassMiningPoolGlobalStats.CurrentBlockDifficulty },
-                            {"network_hashrate",  "" + networkHashrate },
-                            {"network_last_block_hash", blockHash },
-                            {"network_last_block_found_timestamp", blockTimestampFound},
-                            {"network_last_block_reward", blockReward }
-
-                        };
+                            {
+                                {"pool_hashrate", ClassMiningPoolGlobalStats.TotalMinerHashrate.ToString() },
+                                {"pool_total_miner_connected", ClassMiningPoolGlobalStats.TotalMinerConnected.ToString() },
+                                {"pool_total_worker_connected",  ClassMiningPoolGlobalStats.TotalWorkerConnected.ToString() },
+                                {"pool_total_payment",  ClassMinerStats.DictionaryPoolTransaction.Count.ToString() },
+                                {"pool_total_paid", ClassMiningPoolGlobalStats.PoolTotalPaid.ToString("F"+ClassConnectorSetting.MaxDecimalPlace) },
+                                {"pool_total_block_found",  ClassMiningPoolGlobalStats.ListBlockFound.Count.ToString() },
+                                {"pool_fee", MiningPoolSetting.MiningPoolFee.ToString() },
+                                {"pool_last_block_found_date",  lastBlockFoundDate},
+                                {"pool_mining_port_and_difficulty", miningPortInfo },
+                                {"pool_minimum_payment", "" + MiningPoolSetting.MiningPoolMinimumBalancePayment },
+                                {"network_height", ClassMiningPoolGlobalStats.CurrentBlockId },
+                                {"network_difficulty", ClassMiningPoolGlobalStats.CurrentBlockDifficulty },
+                                {"network_hashrate",  networkHashrate.ToString() },
+                                {"network_last_block_hash", blockHash },
+                                {"network_last_block_found_timestamp", blockTimestampFound},
+                                {"network_last_block_reward", blockReward }
+                            };
                             await BuildAndSendHttpPacketAsync(string.Empty, true, poolStatsContent);
                         }
                         else
@@ -751,6 +756,7 @@ namespace Xiropht_Mining_Pool.Api
             }
             catch
             {
+                _clientStatus = false;
             }
         }
     }

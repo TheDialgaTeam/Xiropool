@@ -8,7 +8,7 @@ namespace Xiropht_Mining_Pool.Mining
     {
         public static int TotalWorkerConnected;
         public static int TotalMinerConnected;
-        public static float TotalMinerHashrate;
+        public static decimal TotalMinerHashrate;
         public static int TotalBlockFound;
         public static decimal PoolCurrentBalance;
         public static decimal PoolPendingBalance;
@@ -30,8 +30,8 @@ namespace Xiropht_Mining_Pool.Mining
         public static string CurrentBlockDifficulty;
         public static string CurrentBlockTimestampCreate;
         public static string CurrentBlockIndication;
-        public static float CurrentBlockJobMinRange;
-        public static float CurrentBlockJobMaxRange;
+        public static decimal CurrentBlockJobMinRange;
+        public static decimal CurrentBlockJobMaxRange;
 
 
         /// <summary>

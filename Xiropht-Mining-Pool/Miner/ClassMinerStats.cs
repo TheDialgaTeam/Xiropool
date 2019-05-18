@@ -17,7 +17,7 @@ namespace Xiropht_Mining_Pool.Miner
         /// </summary>
         public long TotalGoodShare;
         public float TotalInvalidShare;
-        public long TotalMiningScore;
+        public decimal TotalMiningScore;
         public decimal TotalBalance;
         public decimal TotalPaid;
         public decimal CustomMinimumPayment;
@@ -25,7 +25,7 @@ namespace Xiropht_Mining_Pool.Miner
         /// <summary>
         /// Dynamic informations for filtering
         /// </summary>
-        public float CurrentTotalHashrate;
+        public decimal CurrentTotalHashrate;
         public long CurrentTotalGoodShare;
         public long CurrentTotalInvalidShare;
         public long DateOfLastGoodShare;
@@ -34,6 +34,7 @@ namespace Xiropht_Mining_Pool.Miner
         public long DateOfTrustedShare;
         public bool IsTrusted;
         public long DateOfBan;
+        public long TotalBan;
         public List<MinerTcpObject> ListOfMinerTcpObject = new List<MinerTcpObject>();
     }
 
@@ -99,7 +100,7 @@ namespace Xiropht_Mining_Pool.Miner
                                                 {
                                                     if (minerStats.Value.ListOfMinerTcpObject.Count > 0)
                                                     {
-                                                        float tmpTotalHashrate = 0;
+                                                        decimal tmpTotalHashrate = 0;
                                                         bool connectedChecked = false;
                                                         for (int i = 0; i < minerStats.Value.ListOfMinerTcpObject.Count; i++)
                                                         {
@@ -116,6 +117,18 @@ namespace Xiropht_Mining_Pool.Miner
                                                                         }
                                                                         totalConnectedWorker++;
                                                                         tmpTotalHashrate += minerStats.Value.ListOfMinerTcpObject[i].CurrentHashrate;
+                                                                       /*if (minerStats.Value.ListOfMinerTcpObject[i].LastShareReceived +5 >= DateTimeOffset.Now.ToUnixTimeSeconds())
+                                                                        {
+                                                                            if (DictionaryMinerStats[minerStats.Key].TotalBan <= MiningPoolSetting.MiningPoolMaxTotalBanMiner)
+                                                                            {
+
+                                                                                if (minerStats.Value.ListOfMinerTcpObject[i].IsConnected && minerStats.Value.ListOfMinerTcpObject[i].IsLogged)
+                                                                                {
+                                                                                    float score = (minerStats.Value.ListOfMinerTcpObject[i].CurrentMiningJobDifficulty / minerStats.Value.ListOfMinerTcpObject[i].CurrentHashrate) * 100;
+                                                                                    DictionaryMinerStats[minerStats.Key].TotalMiningScore += (long)minerStats.Value.ListOfMinerTcpObject[i].CurrentHashrate;
+                                                                                }
+                                                                            }
+                                                                        }*/
 
                                                                     }
                                                                 }
@@ -203,7 +216,7 @@ namespace Xiropht_Mining_Pool.Miner
                                             }
                                             else
                                             {
-                                                if (minerStats.Value.DateOfLastInvalidShare < DateTimeOffset.Now.ToUnixTimeSeconds())
+                                                if (minerStats.Value.DateOfLastInvalidShare + MiningPoolSetting.MiningPoolIntervalCleanInvalidShare < DateTimeOffset.Now.ToUnixTimeSeconds())
                                                 {
                                                     minerStats.Value.CurrentTotalInvalidShare = 0;
                                                 }
@@ -211,6 +224,11 @@ namespace Xiropht_Mining_Pool.Miner
                                                 {
                                                     minerStats.Value.DateOfBan = DateTimeOffset.Now.ToUnixTimeSeconds() + MiningPoolSetting.MiningPoolMinerBanTime;
                                                     minerStats.Value.IsBanned = true;
+                                                    minerStats.Value.TotalBan++;
+                                                    if (minerStats.Value.TotalBan > MiningPoolSetting.MiningPoolMaxTotalBanMiner)
+                                                    {
+                                                        minerStats.Value.TotalMiningScore = 0;
+                                                    }
                                                     minerStats.Value.IsTrusted = false;
                                                     ClassLog.ConsoleWriteLog("Banning Wallet Address: " + minerStats.Key + " for too much invalid share.", ClassLogEnumeration.IndexPoolCheckStatsLog);
                                                 }
@@ -303,7 +321,7 @@ namespace Xiropht_Mining_Pool.Miner
         {
             if (DictionaryMinerStats.ContainsKey(walletAddress))
             {
-                if (DictionaryMinerStats[walletAddress].IsBanned)
+                if (DictionaryMinerStats[walletAddress].IsBanned || DictionaryMinerStats[walletAddress].TotalBan >= MiningPoolSetting.MiningPoolMaxTotalBanMiner)
                 {
                     return true;
                 }
@@ -326,7 +344,7 @@ namespace Xiropht_Mining_Pool.Miner
         /// Increment total good share and current good share.
         /// </summary>
         /// <param name="walletAddress"></param>
-        public static void InsertGoodShareToMiner(string walletAddress, float result)
+        public static void InsertGoodShareToMiner(string walletAddress, decimal result)
         {
             if (DictionaryMinerStats.ContainsKey(walletAddress))
             {
@@ -335,13 +353,15 @@ namespace Xiropht_Mining_Pool.Miner
                 {
                     DictionaryMinerStats[walletAddress].CurrentTotalGoodShare++;
                 }
-                DictionaryMinerStats[walletAddress].TotalMiningScore += (long)result;
+                DictionaryMinerStats[walletAddress].TotalMiningScore += Math.Round(result,0);
+
+                DictionaryMinerStats[walletAddress].DateOfLastGoodShare = DateTimeOffset.Now.ToUnixTimeSeconds();
             }
             else
             {
                 try
                 {
-                    DictionaryMinerStats.Add(walletAddress, new ClassMinerStatsObject() { TotalGoodShare = 1 });
+                    DictionaryMinerStats.Add(walletAddress, new ClassMinerStatsObject() { TotalGoodShare = 1, DateOfLastGoodShare = DateTimeOffset.Now.ToUnixTimeSeconds() });
                 }
                 catch
                 {
@@ -377,6 +397,7 @@ namespace Xiropht_Mining_Pool.Miner
                 }
                 DictionaryMinerStats[walletAddress].IsTrusted = false;
 
+
             }
             else
             {
@@ -397,9 +418,9 @@ namespace Xiropht_Mining_Pool.Miner
         /// Return the total hashrate of the pool.
         /// </summary>
         /// <returns></returns>
-        private static float GetTotalMinerHashrate()
+        private static decimal GetTotalMinerHashrate()
         {
-            float totalHashrate = 0;
+            decimal totalHashrate = 0;
 
             if (DictionaryMinerStats.Count > 0)
             {

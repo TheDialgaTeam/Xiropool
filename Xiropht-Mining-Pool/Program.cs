@@ -162,6 +162,8 @@ namespace Xiropht_Mining_Pool
                                 ClassLog.ConsoleWriteLog(MiningPoolCommandLinesEnumeration.MiningPoolCommandLineHelp + " - Command line to get list of commands details.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleMagentaLog, true);
                                 ClassLog.ConsoleWriteLog(MiningPoolCommandLinesEnumeration.MiningPoolCommandLineStats + " - Show mining pool stats.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleMagentaLog, true);
                                 ClassLog.ConsoleWriteLog(MiningPoolCommandLinesEnumeration.MiningPoolCommandLineBanMiner + " - ban a miner wallet address, syntax: " + MiningPoolCommandLinesEnumeration.MiningPoolCommandLineBanMiner + " wallet_address time", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleMagentaLog, true);
+                                ClassLog.ConsoleWriteLog(MiningPoolCommandLinesEnumeration.MiningPoolCommandLineBanMinerList + " - Show the list of miner wallet address banned.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleMagentaLog, true);
+                                ClassLog.ConsoleWriteLog(MiningPoolCommandLinesEnumeration.MiningPoolCommandLineUnBanMiner + " - Permit to unban a wallet address, syntax: " + MiningPoolCommandLinesEnumeration.MiningPoolCommandLineUnBanMiner + " wallet_address", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleMagentaLog, true);
                                 ClassLog.ConsoleWriteLog(MiningPoolCommandLinesEnumeration.MiningPoolCommandLineExit + " - Stop mining pool, save and exit.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleMagentaLog, true);
 
                                 break;
@@ -169,7 +171,7 @@ namespace Xiropht_Mining_Pool
                                 ClassLog.ConsoleWriteLog("Mining Pool Stats: ", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleMagentaLog, true);
                                 ClassLog.ConsoleWriteLog("Total miners connected: " + ClassMiningPoolGlobalStats.TotalWorkerConnected, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleMagentaLog, true);
                                 ClassLog.ConsoleWriteLog("Total blocks found: " + ClassMiningPoolGlobalStats.TotalBlockFound, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleMagentaLog, true);
-                                ClassLog.ConsoleWriteLog("Total miners hashrate: " + ClassMiningPoolGlobalStats.TotalMinerHashrate, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleMagentaLog, true);
+                                ClassLog.ConsoleWriteLog("Total miners hashrate: " + ClassMiningPoolGlobalStats.TotalMinerHashrate.ToString("F2"), ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleMagentaLog, true);
                                 ClassLog.ConsoleWriteLog("Pool Wallet Total Balance: " + ClassMiningPoolGlobalStats.PoolCurrentBalance + " " + ClassConnectorSetting.CoinNameMin, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleMagentaLog, true);
                                 ClassLog.ConsoleWriteLog("Pool Wallet Total Balance in Pending: " + ClassMiningPoolGlobalStats.PoolPendingBalance + " " + ClassConnectorSetting.CoinNameMin, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleMagentaLog, true);
                                 if (ClassNetworkBlockchain.IsConnected)
@@ -190,6 +192,54 @@ namespace Xiropht_Mining_Pool
                                 else
                                 {
                                     ClassLog.ConsoleWriteLog("Wallet address: " + walletAddress + " is banned successfully pending "+splitCommandLine[2]+" second(s).", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                                }
+                                break;
+                            case MiningPoolCommandLinesEnumeration.MiningPoolCommandLineBanMinerList:
+                                if (ClassMinerStats.DictionaryMinerStats.Count > 0)
+                                {
+                                    int totalBanned = 0;
+                                    foreach(var minerStats in ClassMinerStats.DictionaryMinerStats)
+                                    {
+                                        if (minerStats.Value.IsBanned)
+                                        {
+                                            long minerBanTime = minerStats.Value.DateOfBan - DateTimeOffset.Now.ToUnixTimeSeconds();
+                                            ClassLog.ConsoleWriteLog("Wallet address: " + minerStats.Key + " is banned pending: " + minerBanTime + " second(s).", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                                            totalBanned++;
+                                        }
+                                        else
+                                        {
+                                            if (minerStats.Value.TotalBan > MiningPoolSetting.MiningPoolMaxTotalBanMiner)
+                                            {
+                                                ClassLog.ConsoleWriteLog("Wallet address: " + minerStats.Key + " is banned forever (until to restart the pool or manual unban).", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                                                totalBanned++;
+                                            }
+                                        }
+                                    }
+                                    if (totalBanned == 0)
+                                    {
+                                        ClassLog.ConsoleWriteLog("Their is any miner(s) banned.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
+                                    }
+                                }
+                                break;
+                            case MiningPoolCommandLinesEnumeration.MiningPoolCommandLineUnBanMiner:
+                                if (ClassMinerStats.DictionaryMinerStats.Count > 0)
+                                {
+                                    if (ClassMinerStats.DictionaryMinerStats.ContainsKey(splitCommandLine[1]))
+                                    {
+                                        ClassMinerStats.DictionaryMinerStats[splitCommandLine[1]].DateOfBan = 0;
+                                        ClassMinerStats.DictionaryMinerStats[splitCommandLine[1]].IsBanned = false;
+                                        ClassMinerStats.DictionaryMinerStats[splitCommandLine[1]].TotalBan = 0;
+                                        ClassLog.ConsoleWriteLog("Miner wallet address: " + splitCommandLine[1] + " is unbanned.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
+
+                                    }
+                                    else
+                                    {
+                                        ClassLog.ConsoleWriteLog("Miner wallet address: "+splitCommandLine[1]+" not exist.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
+                                    }
+                                }
+                                else
+                                {
+                                    ClassLog.ConsoleWriteLog("Miner wallet address: " + splitCommandLine[1] + " not exist.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
                                 }
                                 break;
                             case MiningPoolCommandLinesEnumeration.MiningPoolCommandLineExit:
@@ -289,6 +339,8 @@ namespace Xiropht_Mining_Pool
         public const string MiningPoolCommandLineHelp = "help";
         public const string MiningPoolCommandLineStats = "stats";
         public const string MiningPoolCommandLineBanMiner = "banminer";
+        public const string MiningPoolCommandLineBanMinerList = "banminerlist";
+        public const string MiningPoolCommandLineUnBanMiner = "unbanminer";
         public const string MiningPoolCommandLineExit = "exit";
     }
 }

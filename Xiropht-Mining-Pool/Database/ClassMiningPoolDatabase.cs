@@ -224,54 +224,61 @@ namespace Xiropht_Mining_Pool.Database
             {
                 while (!Program.Exit)
                 {
-                    #region Save Database Miner Stats
-                    if (ClassMinerStats.DictionaryMinerStats.Count > 0)
+                    try
                     {
-                        File.Create(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory+ MinerDatabaseFile)).Close();
-                        using (var minerWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + MinerDatabaseFile), true, Encoding.UTF8, 8192) { AutoFlush = true })
+                        #region Save Database Miner Stats
+                        if (ClassMinerStats.DictionaryMinerStats.Count > 0)
                         {
-                            foreach (var miner in ClassMinerStats.DictionaryMinerStats)
+                            File.Create(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + MinerDatabaseFile)).Close();
+                            using (var minerWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + MinerDatabaseFile), true, Encoding.UTF8, 8192) { AutoFlush = true })
                             {
-                                if (!string.IsNullOrEmpty(miner.Key))
+                                foreach (var miner in ClassMinerStats.DictionaryMinerStats)
                                 {
-                                    string line = ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerStart +
-                                                  ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerWalletAddress + miner.Key + "|" +
-                                                  ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalGoodShare + miner.Value.TotalGoodShare + "|" +
-                                                  ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalInvalidShare + miner.Value.TotalInvalidShare + "|" +
-                                                  ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalMiningScore + miner.Value.TotalMiningScore + "|" +
-                                                  ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalBalance + miner.Value.TotalBalance + "|" +
-                                                  ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalPaid + miner.Value.TotalPaid + "|" +
-                                                  ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerCustomMinimumPayment + miner.Value.CustomMinimumPayment;
-                                    minerWriter.WriteLine(line);
+                                    if (!string.IsNullOrEmpty(miner.Key))
+                                    {
+                                        string line = ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerStart +
+                                                      ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerWalletAddress + miner.Key + "|" +
+                                                      ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalGoodShare + miner.Value.TotalGoodShare + "|" +
+                                                      ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalInvalidShare + miner.Value.TotalInvalidShare + "|" +
+                                                      ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalMiningScore + miner.Value.TotalMiningScore + "|" +
+                                                      ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalBalance + miner.Value.TotalBalance + "|" +
+                                                      ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerTotalPaid + miner.Value.TotalPaid + "|" +
+                                                      ClassMiningPoolMinerDatabaseEnumeration.DatabaseMinerCustomMinimumPayment + miner.Value.CustomMinimumPayment;
+                                        minerWriter.WriteLine(line);
+                                    }
                                 }
                             }
-                            minerWriter.Flush();
+                            ClassLog.ConsoleWriteLog("Auto save miner database: " + ClassMinerStats.DictionaryMinerStats.Count + " total miners saved.", ClassLogEnumeration.IndexPoolGeneralLog);
                         }
-                        ClassLog.ConsoleWriteLog("Auto save miner database: " + ClassMinerStats.DictionaryMinerStats.Count + " total miners saved.", ClassLogEnumeration.IndexPoolGeneralLog);
-                    }
-                    #endregion
+                        #endregion
+                        Thread.Sleep(AutoSaveMiningPoolDatabasesInterval);
 
-                    #region Save Database Pool
-                    if (ClassMiningPoolGlobalStats.ListBlockFound.Count > 0)
-                    {
-                        File.Create(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory+ PoolDatabaseFile)).Close();
-                        int totalBlockFound = ClassMiningPoolGlobalStats.ListBlockFound.Count;
-                        using (var poolWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + PoolDatabaseFile), true, Encoding.UTF8, 8192) { AutoFlush = true })
+                        #region Save Database Pool
+                        if (ClassMiningPoolGlobalStats.ListBlockFound.Count > 0)
                         {
-                            for (int i = 0; i < totalBlockFound; i++)
+                            File.Create(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + PoolDatabaseFile)).Close();
+                            int totalBlockFound = ClassMiningPoolGlobalStats.ListBlockFound.Count;
+                            using (var poolWriter = new StreamWriter(ClassUtility.ConvertPath(AppDomain.CurrentDomain.BaseDirectory + PoolDatabaseFile), true, Encoding.UTF8, 8192) { AutoFlush = true })
                             {
-                                if (i < totalBlockFound)
+                                for (int i = 0; i < totalBlockFound; i++)
                                 {
-                                    poolWriter.WriteLine(ClassMiningPoolGlobalStats.ListBlockFound[i]);
+                                    if (i < totalBlockFound)
+                                    {
+                                        poolWriter.WriteLine(ClassMiningPoolGlobalStats.ListBlockFound[i]);
+                                    }
                                 }
                             }
-                            poolWriter.Flush();
+                            ClassLog.ConsoleWriteLog("Auto save pool database: " + totalBlockFound + " total blocks found saved.", ClassLogEnumeration.IndexPoolGeneralLog);
                         }
-                        ClassLog.ConsoleWriteLog("Auto save pool database: " + totalBlockFound + " total blocks found saved.", ClassLogEnumeration.IndexPoolGeneralLog);
+                        #endregion
+                        Thread.Sleep(AutoSaveMiningPoolDatabasesInterval);
+
                     }
-                    #endregion
-                    
-                    Thread.Sleep(AutoSaveMiningPoolDatabasesInterval);
+                    catch(Exception error)
+                    {
+                        ClassLog.ConsoleWriteLog("Auto save databases of the pool exception: "+error.Message+" retry after few seconds", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                        Thread.Sleep(5000);
+                    }
                 }
             });
             ThreadAutoSaveMiningPoolDatabases.Start();
@@ -308,7 +315,6 @@ namespace Xiropht_Mining_Pool.Database
                             minerWriter.WriteLine(line);
                         }
                     }
-                    minerWriter.Flush();
                 }
                 ClassLog.ConsoleWriteLog("Auto save miner database: " + ClassMinerStats.DictionaryMinerStats.Count + " total miners saved.", ClassLogEnumeration.IndexPoolGeneralLog);
             }
@@ -329,7 +335,6 @@ namespace Xiropht_Mining_Pool.Database
                             poolWriter.WriteLine(ClassMiningPoolGlobalStats.ListBlockFound[i]);
                         }
                     }
-                    poolWriter.Flush();
                 }
                 ClassLog.ConsoleWriteLog("Auto save pool database: " + totalBlockFound + " total blocks found saved.", ClassLogEnumeration.IndexPoolGeneralLog);
             }
@@ -356,9 +361,9 @@ namespace Xiropht_Mining_Pool.Database
                             }
                         }
                     }
-                    transactionMinerWriter.Flush();
                 }
             }
+
             #endregion
 
         }

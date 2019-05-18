@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using Xiropht_Connector_All.Setting;
+using Xiropht_Connector_All.Utils;
 
 namespace Xiropht_Mining_Pool.Utility
 {
@@ -99,35 +100,36 @@ namespace Xiropht_Mining_Pool.Utility
         }
 
         /// <summary>
-        /// Proceed math calculation for return his result.
+        /// Return result from a math calculation.
         /// </summary>
         /// <param name="firstNumber"></param>
         /// <param name="operatorCalculation"></param>
         /// <param name="secondNumber"></param>
         /// <returns></returns>
-        public static float ComputeCalculation(string firstNumber, string operatorCalculation, string secondNumber)
+        public static decimal ComputeCalculation(string firstNumber, string operatorCalculation, string secondNumber)
         {
-            float calculCompute = 0;
-            if (operatorCalculation.Contains("+"))
+            decimal calculCompute = 0;
+            decimal firstNumberDecimal = decimal.Parse(firstNumber);
+            decimal secondNumberDecimal = decimal.Parse(secondNumber);
+            switch (operatorCalculation)
             {
-                calculCompute = float.Parse(firstNumber) + float.Parse(secondNumber);
+                case "+":
+                    calculCompute = firstNumberDecimal + secondNumberDecimal;
+                    break;
+                case "-":
+                    calculCompute = firstNumberDecimal - secondNumberDecimal;
+                    break;
+                case "*":
+                    calculCompute = firstNumberDecimal * secondNumberDecimal;
+                    break;
+                case "%":
+                    calculCompute = firstNumberDecimal % secondNumberDecimal;
+                    break;
+                case "/":
+                    calculCompute = firstNumberDecimal / secondNumberDecimal;
+                    break;
             }
-            else if (operatorCalculation.Contains("*"))
-            {
-                calculCompute = float.Parse(firstNumber) * float.Parse(secondNumber);
-            }
-            else if (operatorCalculation.Contains("%"))
-            {
-                calculCompute = float.Parse(firstNumber) % float.Parse(secondNumber);
-            }
-            else if (operatorCalculation.Contains("-"))
-            {
-                calculCompute = float.Parse(firstNumber) - float.Parse(secondNumber);
-            }
-            else if (operatorCalculation.Contains("/"))
-            {
-                calculCompute = float.Parse(firstNumber) / float.Parse(secondNumber);
-            }
+
             return calculCompute;
         }
 
@@ -138,21 +140,21 @@ namespace Xiropht_Mining_Pool.Utility
         /// <param name="minimumValue"></param>
         /// <param name="maximumValue"></param>
         /// <returns></returns>
-        public static float GetRandomBetweenJob(float minimumValue, float maximumValue)
+        public static decimal GetRandomBetweenJob(decimal minimumValue, decimal maximumValue)
         {
             using (RNGCryptoServiceProvider Generator = new RNGCryptoServiceProvider())
             {
-                var randomNumber = new byte[sizeof(float)];
+                var randomNumber = new byte[sizeof(decimal)];
 
                 Generator.GetBytes(randomNumber);
 
-                var asciiValueOfRandomCharacter = (float)Convert.ToDouble(randomNumber[0]);
+                var asciiValueOfRandomCharacter = (decimal)Convert.ToDouble(randomNumber[0]);
 
-                var multiplier = (float)Math.Max(0, asciiValueOfRandomCharacter / 255d - 0.00000000001d);
+                var multiplier = (decimal)Math.Max(0, asciiValueOfRandomCharacter / 255m - 0.00000000001m);
 
                 var range = maximumValue - minimumValue + 1;
 
-                var randomValueInRange = (float)Math.Floor(multiplier * range);
+                var randomValueInRange = (decimal)Math.Floor(multiplier * range);
                 return (minimumValue + randomValueInRange);
             }
         }
@@ -187,11 +189,11 @@ namespace Xiropht_Mining_Pool.Utility
         /// Return a number for complete a math calculation text.
         /// </summary>
         /// <returns></returns>
-        public static float GenerateNumberMathCalculation(float minRange, float maxRange)
+        public static string GenerateNumberMathCalculation(decimal minRange, decimal maxRange)
         {
             string number = "0";
             StringBuilder numberBuilder = new StringBuilder();
-            while (float.Parse(number) > maxRange || float.Parse(number) < minRange)
+            while (decimal.Parse(number) > maxRange || decimal.Parse(number) < minRange)
             {
                 var randomJobSize = ("" + GetRandomBetweenJob(minRange, maxRange)).Length;
 
@@ -225,9 +227,9 @@ namespace Xiropht_Mining_Pool.Utility
                 }
                 number = numberBuilder.ToString();
                 numberBuilder.Clear();
-                return float.Parse(number);
+                return number;
             }
-            return float.Parse(number);
+            return number;
         }
 
         /// <summary>
@@ -355,5 +357,6 @@ namespace Xiropht_Mining_Pool.Utility
             }
             return amount.Replace(",", ".");
         }
+
     }
 }

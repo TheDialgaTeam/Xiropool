@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Xiropht_Connector_All.RPC;
@@ -256,9 +257,9 @@ namespace Xiropht_Mining_Pool.Network
         /// <param name="result"></param>
         /// <param name="math"></param>
         /// <param name="hashShare"></param>
-        public static async void SendPacketBlockFound(string encryptedShare, float result, string math, string hashShare)
+        public static async void SendPacketBlockFound(string encryptedShare, decimal result, string math, string hashShare)
         {
-            string packetShare = ClassSoloMiningPacketEnumeration.SoloMiningSendPacketEnumeration.ReceiveJob + "|" + encryptedShare + "|" + result + "|" + math + "|" + hashShare + "|" + ClassMiningPoolGlobalStats.CurrentBlockId;
+            string packetShare = ClassSoloMiningPacketEnumeration.SoloMiningSendPacketEnumeration.ReceiveJob + "|" + encryptedShare + "|" + result + "|" + math + "|" + hashShare + "|" + ClassMiningPoolGlobalStats.CurrentBlockId + "|Mining Pool Tool - " + Assembly.GetExecutingAssembly().GetName().Version + "R";
             if (!await SendPacketToNetworkBlockchain(packetShare, true))
             {
                 IsConnected = false;
@@ -366,8 +367,8 @@ namespace Xiropht_Mining_Pool.Network
                                 ClassMiningPoolGlobalStats.CurrentBlockMethod = splitBlockContent[4].Replace("METHOD=", "");
                                 ClassMiningPoolGlobalStats.CurrentBlockKey = splitBlockContent[5].Replace("KEY=", "");
                                 ClassMiningPoolGlobalStats.CurrentBlockJob = splitBlockContent[6].Replace("JOB=", "");
-                                ClassMiningPoolGlobalStats.CurrentBlockJobMinRange = float.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[0]);
-                                ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange = float.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[1]);
+                                ClassMiningPoolGlobalStats.CurrentBlockJobMinRange = decimal.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[0]);
+                                ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange = decimal.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[1]);
                                 ClassMiningPoolGlobalStats.CurrentBlockReward = splitBlockContent[7].Replace("REWARD=", "");
                                 ClassMiningPoolGlobalStats.CurrentBlockDifficulty = splitBlockContent[8].Replace("DIFFICULTY=", "");
                                 ClassMiningPoolGlobalStats.CurrentBlockTimestampCreate = splitBlockContent[9].Replace("TIMESTAMP=", "");
@@ -406,8 +407,7 @@ namespace Xiropht_Mining_Pool.Network
                                                     {
                                                         if (miner.Value.ListOfMinerTcpObject[i].IsLogged)
                                                         {
-                                                            miner.Value.ListOfMinerTcpObject[i].ListOfJob.Clear();
-                                                            miner.Value.ListOfMinerTcpObject[i].MiningPoolSendJobAsync(0);
+                                                            miner.Value.ListOfMinerTcpObject[i].MiningPoolSendJobAsync(miner.Value.ListOfMinerTcpObject[i].CurrentMiningJobDifficulty);
                                                         }
                                                     }
                                                 }
@@ -429,13 +429,14 @@ namespace Xiropht_Mining_Pool.Network
                                     ClassMiningPoolGlobalStats.CurrentBlockMethod = splitBlockContent[4].Replace("METHOD=", "");
                                     ClassMiningPoolGlobalStats.CurrentBlockKey = splitBlockContent[5].Replace("KEY=", "");
                                     ClassMiningPoolGlobalStats.CurrentBlockJob = splitBlockContent[6].Replace("JOB=", "");
-                                    ClassMiningPoolGlobalStats.CurrentBlockJobMinRange = float.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[0]);
-                                    ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange = float.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[1]);
+                                    ClassMiningPoolGlobalStats.CurrentBlockJobMinRange = decimal.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[0]);
+                                    ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange = decimal.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[1]);
                                     ClassMiningPoolGlobalStats.CurrentBlockReward = splitBlockContent[7].Replace("REWARD=", "");
                                     ClassMiningPoolGlobalStats.CurrentBlockDifficulty = splitBlockContent[8].Replace("DIFFICULTY=", "");
                                     ClassMiningPoolGlobalStats.CurrentBlockTimestampCreate = splitBlockContent[9].Replace("TIMESTAMP=", "");
                                     ClassMiningPoolGlobalStats.CurrentBlockIndication = splitBlockContent[10].Replace("INDICATION=", "");
                                     ClassMiningPoolGlobalStats.CurrentBlockTemplate = packetSplit[1];
+
                                     int idMethod = 0;
                                     if (ListOfMiningMethodName.Count > 0)
                                     {
@@ -469,8 +470,7 @@ namespace Xiropht_Mining_Pool.Network
                                                         {
                                                             if (miner.Value.ListOfMinerTcpObject[i].IsLogged)
                                                             {
-                                                                miner.Value.ListOfMinerTcpObject[i].ListOfJob.Clear();
-                                                                miner.Value.ListOfMinerTcpObject[i].MiningPoolSendJobAsync(0);
+                                                                miner.Value.ListOfMinerTcpObject[i].MiningPoolSendJobAsync(miner.Value.ListOfMinerTcpObject[i].CurrentMiningJobDifficulty);
                                                             }
                                                         }
                                                     }
