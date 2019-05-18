@@ -17,9 +17,6 @@ namespace Xiropht_Mining_Pool.Utility
 
         public static string[] RandomNumberCalculation = new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
-        private static readonly char[] HexArray = "0123456789ABCDEF".ToCharArray();
-
-
         public static string ConvertPath(string path)
         {
             if (Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX)
@@ -361,48 +358,5 @@ namespace Xiropht_Mining_Pool.Utility
             return amount.Replace(",", ".");
         }
 
-
-        public static byte[] FromHexString(string @string)
-        {
-            if ((@string.Length & 1) != 0)
-            {
-                throw new Exception("Invalid hex string");
-            }
-            byte[] data = new byte[(@string.Length / 2)];
-            for (int i = 0; i < @string.Length / 2; i++)
-            {
-                data[i] = (byte)((FromHexChar(@string[i * 2]) << 4) | FromHexChar(@string[(i * 2) + 1]));
-            }
-            return data;
-        }
-
-        public static string ToHexString(byte[] bytes)
-        {
-            char[] hexChars = new char[(bytes.Length * 2)];
-            for (int j = 0; j < bytes.Length; j++)
-            {
-                int v = bytes[j] & 255;
-                hexChars[j * 2] = HexArray[(int)((uint)v >> 4)];
-                hexChars[(j * 2) + 1] = HexArray[v & 15];
-            }
-            return new string(hexChars);
-        }
-
-        public static int FromHexChar(char c)
-        {
-            if (c >= '0' && c <= '9')
-            {
-                return c - 48;
-            }
-            if (c >= 'A' && c <= 'F')
-            {
-                return (c - 65) + 10;
-            }
-            if (c >= 'a' && c <= 'f')
-            {
-                return (c - 97) + 10;
-            }
-            throw new Exception("Invalid hex character");
-        }
     }
 }

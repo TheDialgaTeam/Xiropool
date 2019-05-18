@@ -369,10 +369,8 @@ namespace Xiropht_Mining_Pool.Network
                                 ClassMiningPoolGlobalStats.CurrentBlockJob = splitBlockContent[6].Replace("JOB=", "");
                                 ClassMiningPoolGlobalStats.CurrentBlockJobMinRange = decimal.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[0]);
                                 ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange = decimal.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[1]);
-                                ClassMiningPoolGlobalStats.CurrentBlockJobMinRange = 2;
-                                ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange = 1000000;
                                 ClassMiningPoolGlobalStats.CurrentBlockReward = splitBlockContent[7].Replace("REWARD=", "");
-                                ClassMiningPoolGlobalStats.CurrentBlockDifficulty = 1000000.ToString();
+                                ClassMiningPoolGlobalStats.CurrentBlockDifficulty = splitBlockContent[8].Replace("DIFFICULTY=", "");
                                 ClassMiningPoolGlobalStats.CurrentBlockTimestampCreate = splitBlockContent[9].Replace("TIMESTAMP=", "");
                                 ClassMiningPoolGlobalStats.CurrentBlockIndication = splitBlockContent[10].Replace("INDICATION=", "");
                                 ClassMiningPoolGlobalStats.CurrentBlockTemplate = packetSplit[1];
@@ -433,10 +431,8 @@ namespace Xiropht_Mining_Pool.Network
                                     ClassMiningPoolGlobalStats.CurrentBlockJob = splitBlockContent[6].Replace("JOB=", "");
                                     ClassMiningPoolGlobalStats.CurrentBlockJobMinRange = decimal.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[0]);
                                     ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange = decimal.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[1]);
-                                    ClassMiningPoolGlobalStats.CurrentBlockJobMinRange = 2;
-                                    ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange = 1000000;
                                     ClassMiningPoolGlobalStats.CurrentBlockReward = splitBlockContent[7].Replace("REWARD=", "");
-                                    ClassMiningPoolGlobalStats.CurrentBlockDifficulty = 1000000.ToString();
+                                    ClassMiningPoolGlobalStats.CurrentBlockDifficulty = splitBlockContent[8].Replace("DIFFICULTY=", "");
                                     ClassMiningPoolGlobalStats.CurrentBlockTimestampCreate = splitBlockContent[9].Replace("TIMESTAMP=", "");
                                     ClassMiningPoolGlobalStats.CurrentBlockIndication = splitBlockContent[10].Replace("INDICATION=", "");
                                     ClassMiningPoolGlobalStats.CurrentBlockTemplate = packetSplit[1];
