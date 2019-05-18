@@ -3,13 +3,9 @@ Mining pool tool compatible with Xiropht, **released has example tool with an ex
 
 **Not updated anymore, you can take it has example to do your own pool**
 
-<h2>Problems to Fix</h2>
-
 **Released has example, the pool tool can't predict how math calculations are generated from miners.**
- 
-**Every calculations of hashrate and rewards are approxitimative and can be cheated on this tool.**
 
-**If you don't do the necessary, somebody can manipulate your pool, that's not give more chance to found a block from cheaters and flooders.**
+**You have the freedom to edit the mining pool tool and the official miner compatible with it to provide another way of mining.**
 
 <h2>Description</h2>
 
@@ -53,6 +49,10 @@ Xiropht-Miner: https://github.com/XIROPHT/Xiropht-Miner
   - stats | Show mining pool stats.
   
   - banminer |  ban a miner wallet address, syntax: banminer wallet_address time
+
+  - banminerlist | show the list of miner wallet address banned.
+
+  - unbanminer | unban a miner by wallet address.
   
   - exit | Safe exit, Stop mining pool, save and exit.
 
@@ -65,7 +65,6 @@ Xiropht-Miner: https://github.com/XIROPHT/Xiropht-Miner
 <h2>Improvements</h2>
 
 **Their is few things who require improvements:**
-
 
 -> Hashrate calculation estimations done by the pool.
 
