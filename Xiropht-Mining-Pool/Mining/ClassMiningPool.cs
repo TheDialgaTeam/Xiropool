@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -385,22 +386,24 @@ namespace Xiropht_Mining_Pool.Mining
                 {
                     decimal timeSpendConnected = ClassUtility.GetCurrentDateInSecond() - LoginDate;
                     decimal lastShareReceived = ClassUtility.GetCurrentDateInSecond() - (LastShareReceived / 1000.0m);
-                    timeSpendConnected -= lastShareReceived;
-                    if (timeSpendConnected <= 0)
+                    if (timeSpendConnected >= 10 && TotalGoodShareDone > 1)
                     {
-                        timeSpendConnected = 1;
-                    }
-                    decimal tmpCurrentHashrate = ((TotalMiningScore / timeSpendConnected) * ((ClassUtility.RandomOperatorCalculation.Length * 2)));
+                        timeSpendConnected -= lastShareReceived;
+                        if (timeSpendConnected <= 0)
+                        {
+                            timeSpendConnected = 1;
+                        }
+                        decimal tmpCurrentHashrate = ((TotalMiningScore / timeSpendConnected) * ((ClassUtility.RandomOperatorCalculation.Length * 4))) * 1.75m;
 
-                    if (tmpCurrentHashrate < 0)
-                    {
-                        tmpCurrentHashrate = 0;
+                        if (tmpCurrentHashrate < 0)
+                        {
+                            tmpCurrentHashrate = 0;
+                        }
+                        else
+                        {
+                            CurrentHashrate = tmpCurrentHashrate;
+                        }
                     }
-                    else
-                    {
-                        CurrentHashrate = tmpCurrentHashrate;
-                    }
-
                 }
 
 
@@ -424,8 +427,9 @@ namespace Xiropht_Mining_Pool.Mining
             Console.WriteLine("Job max range selected:" + max);
             Console.WriteLine("Job min range selected:" + min);
 #endif
-
-                int totalRandomJobToFound = ClassUtility.GetRandomBetween(2, 8);
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+                int totalRandomJobToFound = ClassUtility.GetRandomBetween(2, 7);
                 string currentMiningJobHashIndication = string.Empty;
                 while (!jobGenerated || !IsLogged || !IsConnected)
                 {
@@ -433,7 +437,10 @@ namespace Xiropht_Mining_Pool.Mining
                     {
                         break;
                     }
-
+                    if (stopwatch.ElapsedMilliseconds >= 5000)
+                    {
+                        break;
+                    }
                     string calculation = string.Empty;
                     string randomMathOperator = string.Empty;
                     decimal resultCalculation = 0;
@@ -443,7 +450,10 @@ namespace Xiropht_Mining_Pool.Mining
                     while (decimal.Parse(firstNumber) < min || decimal.Parse(firstNumber) > max || decimal.Parse(secondNumber) < min || decimal.Parse(secondNumber) > max)
                     {
 
-
+                        if (stopwatch.ElapsedMilliseconds >= 5000)
+                        {
+                            break;
+                        }
                         firstNumber = ClassUtility.GenerateNumberMathCalculation(min, max);
                         secondNumber = ClassUtility.GenerateNumberMathCalculation(min, max);
 
@@ -533,6 +543,12 @@ namespace Xiropht_Mining_Pool.Mining
                         }
                     }
                 }
+                stopwatch.Stop();
+                if(!jobGenerated)
+                {
+                    EndMinerConnection();
+                }
+
 #if DEBUG
             Console.WriteLine("Job generated");
 #endif
@@ -1321,7 +1337,7 @@ namespace Xiropht_Mining_Pool.Mining
                             {
                                 decimal tmpcurrentHashrate = CurrentHashrate - ((CurrentHashrate * timeSpendWithoutShare) / 100);
                                 decimal tmpcurrentMiningJob = CurrentMiningJobDifficulty - ((CurrentMiningJobDifficulty * timeSpendWithoutShare) / 100);
-                                if (tmpcurrentMiningJob < CurrentMiningJobDifficulty && tmpcurrentHashrate > 0)
+                                if (tmpcurrentMiningJob*10 < CurrentMiningJobDifficulty && tmpcurrentHashrate > 0)
                                 {
                                     await Task.Factory.StartNew(() => MiningPoolSendJobAsync(tmpcurrentMiningJob), CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
                                 }
