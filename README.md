@@ -9,7 +9,7 @@ Mining pool tool compatible with Xiropht, **released has example tool with an ex
 
 -> **You have the freedom to edit the mining pool tool and the official miner compatible with it to provide another way of mining.**
 
--> **Since the version 0.0.1.2R of the mining pool, the mining logic to generate mining job have change to attempt to fight cheating. This plan has not been tested at 100% and you have to check everything about it to be sure before to use this tool.**
+-> **Since the version 0.0.1.3R of the mining pool, the mining logic to generate mining job have change to attempt to fight cheating. This plan has not been tested at 100% and you have to check everything about it to be sure before to use this tool.**
 
 <h2>Description</h2>
 
