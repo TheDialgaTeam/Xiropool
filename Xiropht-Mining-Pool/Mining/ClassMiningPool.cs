@@ -441,7 +441,7 @@ namespace Xiropht_Mining_Pool.Mining
                     {
                         break;
                     }
-                    if (stopwatch.ElapsedMilliseconds >= 5000)
+                    if (stopwatch.ElapsedMilliseconds >= 5 *1000)
                     {
                         break;
                     }
@@ -454,7 +454,7 @@ namespace Xiropht_Mining_Pool.Mining
                     while (decimal.Parse(firstNumber) < min || decimal.Parse(firstNumber) > max || decimal.Parse(secondNumber) < min || decimal.Parse(secondNumber) > max)
                     {
 
-                        if (stopwatch.ElapsedMilliseconds >= 5000)
+                        if (stopwatch.ElapsedMilliseconds >= 5 * 1000)
                         {
                             break;
                         }
