@@ -28,6 +28,7 @@
         /// </summary>
         public const string TypeResult = "result";
         public const string TypeJobIndication = "job_indication";
+        public const string TypeJobKeyEncryption = "job_key_encryption";
         public const string TypeMinRange = "min_range";
         public const string TypeMaxRange = "max_range";
         public const string TypeShare = "share";

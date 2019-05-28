@@ -163,6 +163,7 @@ namespace Xiropht_Mining_Pool.Mining
         private long LastPacketReceived; // Last packet received on the mining instance.
         private string Ip; // IP of the mining instance.
         public long LoginDate; // Login date of the mining instance.
+        private string MalformedPacket;
 
 
         /// <summary>
@@ -201,6 +202,7 @@ namespace Xiropht_Mining_Pool.Mining
         private decimal CurrentMinRangeJob; // Current min range selected by the pool.
         private decimal CurrentMaxRangeJob; // Current max range selected by the pool.
         private string CurrentShareIndicationHashJob;
+        private string CurrentJobKeyEncryption;
 
 
         /// <summary>
@@ -222,6 +224,7 @@ namespace Xiropht_Mining_Pool.Mining
             MiningPoolPort = miningPoolPort;
             ListOfShare = new Dictionary<string, string>();
             ListOfShareToFound = new Dictionary<string, Tuple<string, string>>();
+            MalformedPacket = string.Empty;
         }
 
         #region Dispose functions
@@ -340,7 +343,6 @@ namespace Xiropht_Mining_Pool.Mining
             {
                 await Task.Delay(100);
             }
-            string compressedMiningShareIndicationHashJob = ClassUtils.CompressData(CurrentShareIndicationHashJob);
 
             JObject jobRequest = new JObject
             {
@@ -348,8 +350,9 @@ namespace Xiropht_Mining_Pool.Mining
                 [ClassMiningPoolRequest.TypeBlock] = ClassMiningPoolGlobalStats.CurrentBlockId,
                 [ClassMiningPoolRequest.TypeBlockTimestampCreate] = ClassMiningPoolGlobalStats.CurrentBlockTimestampCreate,
                 [ClassMiningPoolRequest.TypeBlockKey] = ClassMiningPoolGlobalStats.CurrentBlockKey,
-                [ClassMiningPoolRequest.TypeJobIndication] = compressedMiningShareIndicationHashJob,
+                [ClassMiningPoolRequest.TypeJobIndication] = CurrentShareIndicationHashJob,
                 [ClassMiningPoolRequest.TypeJobDifficulty] = CurrentMiningJobDifficulty,
+                [ClassMiningPoolRequest.TypeJobKeyEncryption] = CurrentJobKeyEncryption,
                 [ClassMiningPoolRequest.TypeMinRange] = CurrentMinRangeJob,
                 [ClassMiningPoolRequest.TypeMaxRange] = CurrentMaxRangeJob,
                 [ClassMiningPoolRequest.TypeJobMiningMethodName] = ClassMiningPoolGlobalStats.CurrentBlockMethod,
@@ -420,6 +423,7 @@ namespace Xiropht_Mining_Pool.Mining
         /// <returns></returns>
         private async Task GenerateJobAsync(decimal min, decimal max)
         {
+            CurrentJobKeyEncryption = ClassUtility.MakeNewEncryptionKey();
             try
             {
                 bool jobGenerated = false;
@@ -509,6 +513,8 @@ namespace Xiropht_Mining_Pool.Mining
                         }
                         else
                         {
+                            shareHashIndication = ClassUtility.EncryptXorShare(shareHashIndication, CurrentJobKeyEncryption);
+                            shareHashIndication = ClassUtility.HashJobToHexString(shareHashIndication);
                             if (ListOfShareToFound.Count >= totalRandomJobToFound)
                             {
                                 jobGenerated = true;
@@ -521,19 +527,19 @@ namespace Xiropht_Mining_Pool.Mining
                                         if (!blockHashIndicationPut)
                                         {
                                             blockHashIndicationPut = true;
-                                            currentMiningJobHashIndication += ClassMiningPoolGlobalStats.CurrentBlockIndication + shareToFound.Value.Item1;
+                                            currentMiningJobHashIndication += ClassMiningPoolGlobalStats.CurrentBlockIndication + ";" + shareToFound.Value.Item1 + ";";
                                         }
                                     }
                                     else
                                     {
-                                        currentMiningJobHashIndication += shareToFound.Value.Item1;
+                                        currentMiningJobHashIndication += shareToFound.Value.Item1 + ";";
                                     }
                                 }
                                 if (!blockHashIndicationPut)
                                 {
-                                    currentMiningJobHashIndication += ClassMiningPoolGlobalStats.CurrentBlockIndication;
+                                    currentMiningJobHashIndication += ClassMiningPoolGlobalStats.CurrentBlockIndication + ";";
                                 }
-                                CurrentShareIndicationHashJob = currentMiningJobHashIndication;
+                                CurrentShareIndicationHashJob = currentMiningJobHashIndication + ";";
                                 break;
                             }
                             else
@@ -574,202 +580,213 @@ namespace Xiropht_Mining_Pool.Mining
                 return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareDuplicate, CurrentMiningJobDifficulty);
             }
             TotalShareReceived++;
-            if (hash != ClassMiningPoolGlobalStats.CurrentBlockIndication)
+
+            string hashDecrypted = ClassUtility.FromHexStringToHashJob(hash); // Convet hash hex string, into hash string.
+            hashDecrypted = ClassUtility.EncryptXorShare(hashDecrypted, CurrentJobKeyEncryption);
+
+            if (hashDecrypted != ClassAlgoErrorEnumeration.AlgoError)
             {
-                if (hash.Length != ClassMiningPoolGlobalStats.CurrentBlockIndication.Length)
+                if (hashDecrypted != ClassMiningPoolGlobalStats.CurrentBlockIndication)
                 {
-                    return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
-                }
-                if (ListOfShare.ContainsKey(share))
-                {
-                    return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareDuplicate, CurrentMiningJobDifficulty);
-                }
-                if (ListOfShare.ContainsValue(hash))
-                {
-                    return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareDuplicate, CurrentMiningJobDifficulty);
-                }
-                bool existShareHashIndication = false;
-                foreach(var shareIndication in ListOfShareToFound)
-                {
-                    if (shareIndication.Value.Item1 == hash)
+                    if (hashDecrypted.Length != ClassMiningPoolGlobalStats.CurrentBlockIndication.Length)
+                    {
+                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
+                    }
+                    if (ListOfShare.ContainsKey(share))
+                    {
+                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareDuplicate, CurrentMiningJobDifficulty);
+                    }
+                    if (ListOfShare.ContainsValue(hash))
+                    {
+                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareDuplicate, CurrentMiningJobDifficulty);
+                    }
+                    bool existShareHashIndication = false;
+                    foreach (var shareIndication in ListOfShareToFound)
+                    {
+                        if (shareIndication.Value.Item1 == hash)
+                        {
+                            existShareHashIndication = true;
+                        }
+                    }
+                    if (CurrentShareIndicationHashJob.Contains(hash))
                     {
                         existShareHashIndication = true;
                     }
+                    if (!existShareHashIndication)
+                    {
+                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
+                    }
                 }
-                if (CurrentShareIndicationHashJob.Contains(hash))
+
+                var splitMathCalculation = mathCalculation.Split(new[] { " " }, StringSplitOptions.None);
+                if (decimal.Parse(splitMathCalculation[0]) >= ClassMiningPoolGlobalStats.CurrentBlockJobMinRange && decimal.Parse(splitMathCalculation[0]) <= ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange)
                 {
-                    existShareHashIndication = true;
-                }
-                if (!existShareHashIndication)
-                {
-                    return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
-                }
-            }
-
-            var splitMathCalculation = mathCalculation.Split(new[] { " " }, StringSplitOptions.None);
-            if (decimal.Parse(splitMathCalculation[0]) >= ClassMiningPoolGlobalStats.CurrentBlockJobMinRange && decimal.Parse(splitMathCalculation[0]) <= ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange)
-            {
-                if (decimal.Parse(splitMathCalculation[2]) >= ClassMiningPoolGlobalStats.CurrentBlockJobMinRange && decimal.Parse(splitMathCalculation[2]) <= ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange)
-                {
-                    if (result > ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange)
+                    if (decimal.Parse(splitMathCalculation[2]) >= ClassMiningPoolGlobalStats.CurrentBlockJobMinRange && decimal.Parse(splitMathCalculation[2]) <= ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange)
                     {
-                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
-                    }
-                    if (result < ClassMiningPoolGlobalStats.CurrentBlockJobMinRange)
-                    {
-                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
-                    }
-
-                    if (ClassUtility.ComputeCalculation(splitMathCalculation[0], splitMathCalculation[1], splitMathCalculation[2]) != result)
-                    {
-                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
-                    }
-
-
-                    byte[] reverseShare = Convert.FromBase64String(share);
-
-                    if (reverseShare.Length != 96)
-                    {
-                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
-                    }
-
-                    byte[] reverseHash = Convert.FromBase64String(hash);
-
-                    if (reverseShare.Length != 96)
-                    {
-                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
-                    }
-
-                    if (!trustedShare)
-                    {
-                        string encryptedShare = ClassUtility.StringToHexString(mathCalculation + ClassMiningPoolGlobalStats.CurrentBlockTimestampCreate);
-
-                        encryptedShare = ClassUtility.EncryptXorShare(encryptedShare, ClassMiningPoolGlobalStats.CurrentRoundXorKey.ToString());
-                        for (int i = 0; i < ClassMiningPoolGlobalStats.CurrentRoundAesRound; i++)
+                        if (result > ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange)
                         {
-                            encryptedShare = ClassUtility.EncryptAesShareAsync(encryptedShare, ClassMiningPoolGlobalStats.CurrentBlockKey, Encoding.UTF8.GetBytes(ClassMiningPoolGlobalStats.CurrentRoundAesKey), ClassMiningPoolGlobalStats.CurrentRoundAesSize);
+                            return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
                         }
-                        encryptedShare = ClassUtility.EncryptXorShare(encryptedShare, ClassMiningPoolGlobalStats.CurrentRoundXorKey.ToString());
-                        encryptedShare = ClassUtility.EncryptAesShareAsync(encryptedShare, ClassMiningPoolGlobalStats.CurrentBlockKey, Encoding.UTF8.GetBytes(ClassMiningPoolGlobalStats.CurrentRoundAesKey), ClassMiningPoolGlobalStats.CurrentRoundAesSize);
-                        encryptedShare = ClassUtility.GenerateSHA512(encryptedShare);
-
-                        if (encryptedShare != share)
+                        if (result < ClassMiningPoolGlobalStats.CurrentBlockJobMinRange)
                         {
                             return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
                         }
 
-                        string hashShare = ClassUtility.GenerateSHA512(encryptedShare);
-
-                        if (hashShare != hash)
+                        if (ClassUtility.ComputeCalculation(splitMathCalculation[0], splitMathCalculation[1], splitMathCalculation[2]) != result)
                         {
                             return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
                         }
-                    }
 
-                    if (hash == ClassMiningPoolGlobalStats.CurrentBlockIndication)
-                    {
-                        CheckShareHashWithBlockIndicationAsync(result, mathCalculation, share, hash);
-                    }
-                    else // New PoW value system.
-                    {
 
-                        byte[] targetBlockByte = ClassUtility.FromHexString(ClassMiningPoolGlobalStats.CurrentBlockIndication);
-                        decimal targetBlockValue = Convert.ToDecimal(BitConverter.ToInt64(targetBlockByte, 0));
-                        byte[] jobByte = ClassUtility.FromHexString(hash);
-                        decimal jobValue = Convert.ToDecimal(BitConverter.ToInt64(jobByte, 0));
-                        if (jobValue > 0)
+                        byte[] reverseShare = Convert.FromBase64String(share);
+
+                        if (reverseShare.Length != 96)
                         {
-                            byte[] shareByte = ClassUtility.FromHexString(share);
-                            decimal shareValue = Convert.ToDecimal(BitConverter.ToInt64(shareByte, 0));
-                            if (shareValue > 0)
+                            return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
+                        }
+
+                        byte[] reverseHash = Convert.FromBase64String(hashDecrypted);
+
+                        if (reverseShare.Length != 96)
+                        {
+                            return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
+                        }
+
+                        if (!trustedShare)
+                        {
+                            string encryptedShare = ClassUtility.StringToHexString(mathCalculation + ClassMiningPoolGlobalStats.CurrentBlockTimestampCreate);
+
+                            encryptedShare = ClassUtility.EncryptXorShare(encryptedShare, ClassMiningPoolGlobalStats.CurrentRoundXorKey.ToString());
+                            for (int i = 0; i < ClassMiningPoolGlobalStats.CurrentRoundAesRound; i++)
                             {
-                                decimal sumOfWorkValue = shareValue - jobValue;
-                                if (sumOfWorkValue > 0)
-                                {
-                                    if (sumOfWorkValue >= targetBlockValue)
-                                    {
-                                        decimal powDifficultyValue = sumOfWorkValue - targetBlockValue;
-                                        decimal approximativeEquality = Math.Abs((powDifficultyValue / targetBlockValue) * 100);
-                                        if (approximativeEquality >= 100 && approximativeEquality <= 100.01m) // Max acceptance on the blockchain
-                                        {
-                                            ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " seems to found the block with a share PoW Value. -> " +
-                                                " Pow Job Value: " + jobValue + " | Pow Share Value: " + shareValue + " | Sum of Work: " + sumOfWorkValue + " | Block Pow Value: " + targetBlockValue + " | Difficulty Pow Value: " + powDifficultyValue + "/" + targetBlockValue, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
+                                encryptedShare = ClassUtility.EncryptAesShareAsync(encryptedShare, ClassMiningPoolGlobalStats.CurrentBlockKey, Encoding.UTF8.GetBytes(ClassMiningPoolGlobalStats.CurrentRoundAesKey), ClassMiningPoolGlobalStats.CurrentRoundAesSize);
+                            }
+                            encryptedShare = ClassUtility.EncryptXorShare(encryptedShare, ClassMiningPoolGlobalStats.CurrentRoundXorKey.ToString());
+                            encryptedShare = ClassUtility.EncryptAesShareAsync(encryptedShare, ClassMiningPoolGlobalStats.CurrentBlockKey, Encoding.UTF8.GetBytes(ClassMiningPoolGlobalStats.CurrentRoundAesKey), ClassMiningPoolGlobalStats.CurrentRoundAesSize);
+                            encryptedShare = ClassUtility.GenerateSHA512(encryptedShare);
 
-                                            await Task.Factory.StartNew(() => ClassNetworkBlockchain.SendPacketBlockFound(share, result, mathCalculation, hash), CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, PriorityScheduler.AboveNormal).ConfigureAwait(false);
+                            if (encryptedShare != share)
+                            {
+                                return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
+                            }
+
+                            string hashShare = ClassUtility.GenerateSHA512(encryptedShare);
+
+                            if (hashShare != hashDecrypted)
+                            {
+                                return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
+                            }
+                        }
+
+                        if (hashDecrypted == ClassMiningPoolGlobalStats.CurrentBlockIndication)
+                        {
+                            CheckShareHashWithBlockIndicationAsync(result, mathCalculation, share, hashDecrypted);
+                        }
+                        else // New PoW value system.
+                        {
+
+                            byte[] targetBlockByte = ClassUtility.FromHexString(ClassMiningPoolGlobalStats.CurrentBlockIndication);
+                            decimal targetBlockValue = Convert.ToDecimal(BitConverter.ToInt64(targetBlockByte, 0));
+                            byte[] jobByte = ClassUtility.FromHexString(hashDecrypted);
+                            decimal jobValue = Convert.ToDecimal(BitConverter.ToInt64(jobByte, 0));
+                            if (jobValue > 0)
+                            {
+                                byte[] shareByte = ClassUtility.FromHexString(share);
+                                decimal shareValue = Convert.ToDecimal(BitConverter.ToInt64(shareByte, 0));
+                                if (shareValue > 0)
+                                {
+                                    decimal sumOfWorkValue = shareValue - jobValue;
+                                    if (sumOfWorkValue > 0)
+                                    {
+                                        if (sumOfWorkValue >= targetBlockValue)
+                                        {
+                                            decimal powDifficultyValue = sumOfWorkValue - targetBlockValue;
+                                            decimal approximativeEquality = Math.Abs((powDifficultyValue / targetBlockValue) * 100);
+                                            if (approximativeEquality >= 100 && approximativeEquality <= 100.01m) // Max acceptance on the blockchain
+                                            {
+                                                ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " seems to found the block with a share PoW Value. -> " +
+                                                    " Pow Job Value: " + jobValue + " | Pow Share Value: " + shareValue + " | Sum of Work: " + sumOfWorkValue + " | Block Pow Value: " + targetBlockValue + " | Difficulty Pow Value: " + powDifficultyValue + "/" + targetBlockValue, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
+
+                                                await Task.Factory.StartNew(() => ClassNetworkBlockchain.SendPacketBlockFound(share, result, mathCalculation, hashDecrypted), CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, PriorityScheduler.AboveNormal).ConfigureAwait(false);
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    try
-                    {
-                        if (!ListOfShare.ContainsKey(share))
+                        try
                         {
-                            ListOfShare.Add(share, hash);
+                            if (!ListOfShare.ContainsKey(share))
+                            {
+                                ListOfShare.Add(share, hash);
+                            }
+                            else
+                            {
+                                return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareDuplicate, CurrentMiningJobDifficulty);
+                            }
                         }
-                        else
+                        catch
                         {
                             return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareDuplicate, CurrentMiningJobDifficulty);
                         }
-                    }
-                    catch
-                    {
-                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareDuplicate, CurrentMiningJobDifficulty);
-                    }
-                    LastShareReceived = ClassUtility.GetCurrentDateInMilliSecond();
-                    decimal difference = (LastShareReceived / 1000.0m) - LastJobDateReceive;
-                    decimal timespendOnShare = ClassUtility.GetCurrentDateInSecond() - LastJobDateReceive;
-                    LastShareDifficultyDone = CurrentMiningJobDifficulty;
+                        LastShareReceived = ClassUtility.GetCurrentDateInMilliSecond();
+                        decimal difference = (LastShareReceived / 1000.0m) - LastJobDateReceive;
+                        decimal timespendOnShare = ClassUtility.GetCurrentDateInSecond() - LastJobDateReceive;
+                        LastShareDifficultyDone = CurrentMiningJobDifficulty;
 
-                    if (difference >= 1)
-                    {
-                        decimal factorScore = (CurrentMiningJobDifficulty * difference) / 100;
-                        decimal miningScore = Math.Round((CurrentMiningJobDifficulty - factorScore), 0);
-                        decimal newDifficulty = Math.Round(CurrentMiningJobDifficulty + ((miningScore / CurrentMiningJobDifficulty) * 100), 0);
-                        decimal totalPossibility = ((CurrentMiningJobDifficulty / CurrentMinRangeJob) * ClassUtility.RandomOperatorCalculation.Length);
-
-                        if (miningScore <= CurrentMiningJobDifficulty && miningScore > 0)
+                        if (difference >= 1)
                         {
+                            decimal factorScore = (CurrentMiningJobDifficulty * difference) / 100;
+                            decimal miningScore = Math.Round((CurrentMiningJobDifficulty - factorScore), 0);
+                            decimal newDifficulty = Math.Round(CurrentMiningJobDifficulty + ((miningScore / CurrentMiningJobDifficulty) * 100), 0);
+                            decimal totalPossibility = ((CurrentMiningJobDifficulty / CurrentMinRangeJob) * ClassUtility.RandomOperatorCalculation.Length);
 
-                            TotalMiningScore += Math.Round(miningScore, 0);
+                            if (miningScore <= CurrentMiningJobDifficulty && miningScore > 0)
+                            {
 
+                                TotalMiningScore += Math.Round(miningScore, 0);
+
+                            }
+                            if (newDifficulty >= CurrentMiningJobDifficulty * 10)
+                            {
+                                UseCustomDifficulty = false;
+                            }
+
+                            return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareOk, newDifficulty);
                         }
-                        if (newDifficulty >= CurrentMiningJobDifficulty * 10)
+                        else
                         {
-                            UseCustomDifficulty = false;
+                            decimal miningScore = Math.Round((CurrentMiningJobDifficulty * difference), 0);
+                            decimal newDifficulty = Math.Round((CurrentMiningJobDifficulty / difference), 0);
+
+                            if (miningScore <= CurrentMiningJobDifficulty && miningScore > 0)
+                            {
+                                TotalMiningScore += Math.Round(miningScore, 0);
+                            }
+                            if (newDifficulty >= CurrentMiningJobDifficulty * 10)
+                            {
+                                UseCustomDifficulty = false;
+                            }
+                            return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareOk, newDifficulty);
                         }
 
-                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareOk, newDifficulty);
                     }
                     else
                     {
-                        decimal miningScore = Math.Round((CurrentMiningJobDifficulty * difference), 0);
-                        decimal newDifficulty = Math.Round((CurrentMiningJobDifficulty / difference), 0);
-
-                        if (miningScore <= CurrentMiningJobDifficulty && miningScore > 0)
-                        {
-                            TotalMiningScore += Math.Round(miningScore, 0);
-                        }
-                        if (newDifficulty >= CurrentMiningJobDifficulty * 10)
-                        {
-                            UseCustomDifficulty = false;
-                        }
-                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareOk, newDifficulty);
+                        ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " bad number used: " + splitMathCalculation[2], ClassLogEnumeration.IndexPoolMinerErrorLog);
+                        return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareLowDifficulty, CurrentMiningJobDifficulty);
                     }
-
                 }
                 else
                 {
-                    ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " bad number used: " + splitMathCalculation[2], ClassLogEnumeration.IndexPoolMinerErrorLog);
+                    ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " bad number used: " + splitMathCalculation[0], ClassLogEnumeration.IndexPoolMinerErrorLog);
                     return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareLowDifficulty, CurrentMiningJobDifficulty);
                 }
             }
             else
             {
-                ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " bad number used: " + splitMathCalculation[0], ClassLogEnumeration.IndexPoolMinerErrorLog);
-                return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareLowDifficulty, CurrentMiningJobDifficulty);
+                return new Tuple<string, decimal>(ClassMiningPoolRequest.TypeResultShareInvalid, CurrentMiningJobDifficulty);
             }
         }
 
@@ -845,9 +862,14 @@ namespace Xiropht_Mining_Pool.Mining
                                 LastPacketReceived = ClassUtility.GetCurrentDateInSecond();
                                 TotalPacketReceivedPerSecond++;
                                 bufferPacket.packet = Encoding.UTF8.GetString(bufferPacket.buffer, 0, received);
-                                if (bufferPacket.packet.Contains(Environment.NewLine))
+                                if (bufferPacket.packet.Contains("\n"))
                                 {
-                                    var splitPacket = bufferPacket.packet.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+                                    if (!string.IsNullOrEmpty(MalformedPacket))
+                                    {
+                                        bufferPacket.packet = MalformedPacket + bufferPacket.packet;
+                                        MalformedPacket = string.Empty;
+                                    }
+                                    var splitPacket = bufferPacket.packet.Split(new[] { "\n" }, StringSplitOptions.None);
                                     foreach (var packetEach in splitPacket)
                                     {
                                         if (packetEach != null)
@@ -864,8 +886,14 @@ namespace Xiropht_Mining_Pool.Mining
                                 }
                                 else
                                 {
-                                    await Task.Factory.StartNew(() => HandleMinerPacketAsync(bufferPacket.packet), CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, PriorityScheduler.Lowest).ConfigureAwait(false);
-
+                                    if (MalformedPacket.Length >= int.MaxValue-1 || (long)(MalformedPacket.Length + bufferPacket.packet.Length) >= int.MaxValue-1)
+                                    {
+                                        MalformedPacket = string.Empty;
+                                    }
+                                    else
+                                    {
+                                        MalformedPacket += bufferPacket.packet;
+                                    }
                                 }
                             }
                         }
@@ -1395,6 +1423,7 @@ namespace Xiropht_Mining_Pool.Mining
         /// </summary>
         public void EndMinerConnection()
         {
+            MalformedPacket = string.Empty;
             MinerWalletAddress = string.Empty;
             IsLogged = false;
             IsConnected = false;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -16,6 +17,12 @@ namespace Xiropht_Mining_Pool.Utility
         public static string[] RandomOperatorCalculation = new[] { "+", "*", "%", "-", "/" };
 
         public static string[] RandomNumberCalculation = new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+
+        public static List<string> ListCharacter = new List<string>
+        {
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u",
+            "v", "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
+        };
 
         private static readonly char[] HexArray = "0123456789ABCDEF".ToCharArray();
 
@@ -280,6 +287,7 @@ namespace Xiropht_Mining_Pool.Utility
             }
         }
 
+
         /// <summary>
         /// Generate a sha512 hash
         /// </summary>
@@ -403,6 +411,51 @@ namespace Xiropht_Mining_Pool.Utility
                 return (c - 97) + 10;
             }
             throw new Exception("Invalid hex character");
+        }
+
+
+        public static string HashJobToHexString(string str)
+        {
+            var sb = new StringBuilder();
+
+            var bytes = Encoding.Unicode.GetBytes(str);
+            foreach (var t in bytes)
+            {
+                sb.Append(t.ToString("X2"));
+            }
+
+            return sb.ToString(); 
+        }
+
+        public static string FromHexStringToHashJob(string hexString)
+        {
+            var bytes = new byte[hexString.Length / 2];
+            for (var i = 0; i < bytes.Length; i++)
+            {
+                bytes[i] = Convert.ToByte(hexString.Substring(i * 2, 2), 16);
+            }
+
+            return Encoding.Unicode.GetString(bytes);
+        }
+
+        /// <summary>
+        /// Make a new key for dynamic encryption.
+        /// </summary>
+        /// <returns></returns>
+        public static string MakeNewEncryptionKey()
+        {
+            string newGenesisKey = string.Empty;
+            for (int i = 0; i < GetRandomBetween(10, 128); i++) // Minimum size required of 8 characters 
+            {
+                var randomUpper = GetRandomBetween(0, 100);
+                if (randomUpper <= 45)
+                    newGenesisKey += ListCharacter[GetRandomBetween(0, ListCharacter.Count - 1)];
+                else
+                {
+                    newGenesisKey += ListCharacter[GetRandomBetween(0, ListCharacter.Count - 1)].ToUpper();
+                }
+            }
+            return newGenesisKey;
         }
     }
 }
