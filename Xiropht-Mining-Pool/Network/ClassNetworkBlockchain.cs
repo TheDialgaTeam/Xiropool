@@ -273,155 +273,95 @@ namespace Xiropht_Mining_Pool.Network
         /// <param name="packet"></param>
         private static async void HandlePacketNetworkAsync(string packet)
         {
-            packet = packet.Replace("*", "");
-            var packetSplit = packet.Split(new[] { "|" }, StringSplitOptions.None);
-
-            switch (packetSplit[0])
+            try
             {
-                case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendLoginAccepted:
-                    ClassLog.ConsoleWriteLog("Mining pool logged successfully to the blockchain network.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
-                    AskMiningElementsConnectionAsync();
-                    break;
-                case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendListBlockMethod:
-                    var methodList = packetSplit[1];
-                    if (methodList.Contains("#"))
-                    {
-                        var splitMethodList = methodList.Split(new[] { "#" }, StringSplitOptions.None);
-                        if (ListOfMiningMethodName.Count > 1)
-                        {
-                            foreach (var methodName in splitMethodList)
-                            {
-                                if (!string.IsNullOrEmpty(methodName))
-                                {
-                                    if (ListOfMiningMethodName.Contains(methodName) == false)
-                                    {
-                                        ListOfMiningMethodName.Add(methodName);
-                                    }
-                                    if (!await SendPacketToNetworkBlockchain(ClassSoloMiningPacketEnumeration.SoloMiningSendPacketEnumeration.ReceiveAskContentBlockMethod + "|" + methodName, true).ConfigureAwait(false))
-                                    {
-                                        IsConnected = false;
-                                        break;
-                                    }
+                packet = packet.Replace("*", "");
+                var packetSplit = packet.Split(new[] { "|" }, StringSplitOptions.None);
 
-                                    await Task.Delay(1000);
+                switch (packetSplit[0])
+                {
+                    case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendLoginAccepted:
+                        ClassLog.ConsoleWriteLog("Mining pool logged successfully to the blockchain network.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
+                        AskMiningElementsConnectionAsync();
+                        break;
+                    case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendListBlockMethod:
+                        var methodList = packetSplit[1];
+                        if (methodList.Contains("#"))
+                        {
+                            var splitMethodList = methodList.Split(new[] { "#" }, StringSplitOptions.None);
+                            if (ListOfMiningMethodName.Count > 1)
+                            {
+                                foreach (var methodName in splitMethodList)
+                                {
+                                    if (!string.IsNullOrEmpty(methodName))
+                                    {
+                                        if (ListOfMiningMethodName.Contains(methodName) == false)
+                                        {
+                                            ListOfMiningMethodName.Add(methodName);
+                                        }
+                                        if (!await SendPacketToNetworkBlockchain(ClassSoloMiningPacketEnumeration.SoloMiningSendPacketEnumeration.ReceiveAskContentBlockMethod + "|" + methodName, true).ConfigureAwait(false))
+                                        {
+                                            IsConnected = false;
+                                            break;
+                                        }
+
+                                        await Task.Delay(1000);
+                                    }
+                                }
+                            }
+                            else
+                            {
+
+                                foreach (var methodName in splitMethodList)
+                                {
+                                    if (!string.IsNullOrEmpty(methodName))
+                                    {
+                                        if (ListOfMiningMethodName.Contains(methodName) == false)
+                                        {
+                                            ListOfMiningMethodName.Add(methodName);
+                                        }
+                                        if (!await SendPacketToNetworkBlockchain(ClassSoloMiningPacketEnumeration.SoloMiningSendPacketEnumeration.ReceiveAskContentBlockMethod + "|" + methodName, true).ConfigureAwait(false))
+                                        {
+                                            IsConnected = false;
+                                            break;
+                                        }
+                                        await Task.Delay(1000);
+                                    }
                                 }
                             }
                         }
                         else
                         {
-
-                            foreach (var methodName in splitMethodList)
+                            if (ListOfMiningMethodName.Contains(methodList) == false)
                             {
-                                if (!string.IsNullOrEmpty(methodName))
-                                {
-                                    if (ListOfMiningMethodName.Contains(methodName) == false)
-                                    {
-                                        ListOfMiningMethodName.Add(methodName);
-                                    }
-                                    if (!await SendPacketToNetworkBlockchain(ClassSoloMiningPacketEnumeration.SoloMiningSendPacketEnumeration.ReceiveAskContentBlockMethod + "|" + methodName, true).ConfigureAwait(false))
-                                    {
-                                        IsConnected = false;
-                                        break;
-                                    }
-                                    await Task.Delay(1000);
-                                }
+                                ListOfMiningMethodName.Add(methodList);
+                            }
+
+                            if (!await SendPacketToNetworkBlockchain(ClassSoloMiningPacketEnumeration.SoloMiningSendPacketEnumeration.ReceiveAskContentBlockMethod + "|" + methodList, true).ConfigureAwait(false))
+                            {
+                                IsConnected = false;
                             }
                         }
-                    }
-                    else
-                    {
-                        if (ListOfMiningMethodName.Contains(methodList) == false)
+                        break;
+                    case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendContentBlockMethod:
+                        if (ListOfMiningMethodContent.Count == 0)
                         {
-                            ListOfMiningMethodName.Add(methodList);
+                            ListOfMiningMethodContent.Add(packetSplit[1]);
                         }
-
-                        if (!await SendPacketToNetworkBlockchain(ClassSoloMiningPacketEnumeration.SoloMiningSendPacketEnumeration.ReceiveAskContentBlockMethod + "|" + methodList, true).ConfigureAwait(false))
+                        else
                         {
-                            IsConnected = false;
+                            ListOfMiningMethodContent[0] = packetSplit[1];
                         }
-                    }
-                    break;
-                case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendContentBlockMethod:
-                    if (ListOfMiningMethodContent.Count == 0)
-                    {
-                        ListOfMiningMethodContent.Add(packetSplit[1]);
-                    }
-                    else
-                    {
-                        ListOfMiningMethodContent[0] = packetSplit[1];
-                    }
-                    break;
-                case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendCurrentBlockMining:
-                    if (packetSplit[1] != ClassMiningPoolGlobalStats.CurrentBlockTemplate)
-                    {
-                        var splitBlockContent = packetSplit[1].Split(new[] { "&" }, StringSplitOptions.None);
-                        if (splitBlockContent[0].Replace("ID=", "") != "" && splitBlockContent[0].Replace("ID=", "").Length > 0)
+                        break;
+                    case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendCurrentBlockMining:
+                        if (packetSplit[1] != ClassMiningPoolGlobalStats.CurrentBlockTemplate)
                         {
-                            if (splitBlockContent[0].Replace("ID=", "") != ClassMiningPoolGlobalStats.CurrentBlockId)
+                            var splitBlockContent = packetSplit[1].Split(new[] { "&" }, StringSplitOptions.None);
+                            if (splitBlockContent[0].Replace("ID=", "") != "" && splitBlockContent[0].Replace("ID=", "").Length > 0)
                             {
+                                if (splitBlockContent[0].Replace("ID=", "") != ClassMiningPoolGlobalStats.CurrentBlockId)
+                                {
 
-                                ClassMiningPoolGlobalStats.CurrentBlockId = splitBlockContent[0].Replace("ID=", "");
-                                ClassMiningPoolGlobalStats.CurrentBlockHash = splitBlockContent[1].Replace("HASH=", "");
-                                ClassMiningPoolGlobalStats.CurrentBlockAlgorithm = splitBlockContent[2].Replace("ALGORITHM=", "");
-                                ClassMiningPoolGlobalStats.CurrentBlockSize = splitBlockContent[3].Replace("SIZE=", "");
-                                ClassMiningPoolGlobalStats.CurrentBlockMethod = splitBlockContent[4].Replace("METHOD=", "");
-                                ClassMiningPoolGlobalStats.CurrentBlockKey = splitBlockContent[5].Replace("KEY=", "");
-                                ClassMiningPoolGlobalStats.CurrentBlockJob = splitBlockContent[6].Replace("JOB=", "");
-                                ClassMiningPoolGlobalStats.CurrentBlockJobMinRange = decimal.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[0]);
-                                ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange = decimal.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[1]);
-                                ClassMiningPoolGlobalStats.CurrentBlockReward = splitBlockContent[7].Replace("REWARD=", "");
-                                ClassMiningPoolGlobalStats.CurrentBlockDifficulty = splitBlockContent[8].Replace("DIFFICULTY=", "");
-                                ClassMiningPoolGlobalStats.CurrentBlockTimestampCreate = splitBlockContent[9].Replace("TIMESTAMP=", "");
-                                ClassMiningPoolGlobalStats.CurrentBlockIndication = splitBlockContent[10].Replace("INDICATION=", "");
-                                ClassMiningPoolGlobalStats.CurrentBlockTemplate = packetSplit[1];
-                                int idMethod = 0;
-                                if(ListOfMiningMethodName.Count > 0)
-                                {
-                                    for(int i = 0; i < ListOfMiningMethodName.Count; i++)
-                                    {
-                                        if (i < ListOfMiningMethodName.Count)
-                                        {
-                                            if (ListOfMiningMethodName[i] == ClassMiningPoolGlobalStats.CurrentBlockMethod)
-                                            {
-                                                idMethod = i;
-                                            }
-                                        }
-                                    }
-                                }
-                                var splitMethod = ListOfMiningMethodContent[idMethod].Split(new[] { "#" }, StringSplitOptions.None);
-                                ClassMiningPoolGlobalStats.CurrentRoundAesRound = int.Parse(splitMethod[0]);
-                                ClassMiningPoolGlobalStats.CurrentRoundAesSize = int.Parse(splitMethod[1]);
-                                ClassMiningPoolGlobalStats.CurrentRoundAesKey = splitMethod[2];
-                                ClassMiningPoolGlobalStats.CurrentRoundXorKey = int.Parse(splitMethod[3]);
-                                if (ClassMinerStats.DictionaryMinerStats.Count > 0)
-                                {
-                                    foreach(var miner in ClassMinerStats.DictionaryMinerStats)
-                                    {
-                                        if (miner.Value.ListOfMinerTcpObject.Count > 0)
-                                        {
-                                            for(int i = 0; i < miner.Value.ListOfMinerTcpObject.Count; i++)
-                                            {
-                                                if (i < miner.Value.ListOfMinerTcpObject.Count)
-                                                {
-                                                    if (miner.Value.ListOfMinerTcpObject[i] != null)
-                                                    {
-                                                        if (miner.Value.ListOfMinerTcpObject[i].IsLogged)
-                                                        {
-                                                            miner.Value.ListOfMinerTcpObject[i].MiningPoolSendJobAsync(miner.Value.ListOfMinerTcpObject[i].CurrentMiningJobDifficulty);
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                ClassLog.ConsoleWriteLog("New block to mining id: " + ClassMiningPoolGlobalStats.CurrentBlockId + " difficulty: " + ClassMiningPoolGlobalStats.CurrentBlockDifficulty + " hash: "+ClassMiningPoolGlobalStats.CurrentBlockHash, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleBlueLog, true);
-                                ClassLog.ConsoleWriteLog("Current Mining Method: " + ClassMiningPoolGlobalStats.CurrentBlockMethod + " = AES ROUND: " + ClassMiningPoolGlobalStats.CurrentRoundAesRound + " AES SIZE: " + ClassMiningPoolGlobalStats.CurrentRoundAesSize + " AES BYTE KEY: " + ClassMiningPoolGlobalStats.CurrentRoundAesKey + " XOR KEY: " + ClassMiningPoolGlobalStats.CurrentRoundXorKey, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleBlueLog, true);
-                            }
-                            else
-                            {
-                                if (splitBlockContent[1].Replace("HASH=", "") != ClassMiningPoolGlobalStats.CurrentBlockHash)
-                                {
                                     ClassMiningPoolGlobalStats.CurrentBlockId = splitBlockContent[0].Replace("ID=", "");
                                     ClassMiningPoolGlobalStats.CurrentBlockHash = splitBlockContent[1].Replace("HASH=", "");
                                     ClassMiningPoolGlobalStats.CurrentBlockAlgorithm = splitBlockContent[2].Replace("ALGORITHM=", "");
@@ -436,7 +376,6 @@ namespace Xiropht_Mining_Pool.Network
                                     ClassMiningPoolGlobalStats.CurrentBlockTimestampCreate = splitBlockContent[9].Replace("TIMESTAMP=", "");
                                     ClassMiningPoolGlobalStats.CurrentBlockIndication = splitBlockContent[10].Replace("INDICATION=", "");
                                     ClassMiningPoolGlobalStats.CurrentBlockTemplate = packetSplit[1];
-
                                     int idMethod = 0;
                                     if (ListOfMiningMethodName.Count > 0)
                                     {
@@ -478,29 +417,97 @@ namespace Xiropht_Mining_Pool.Network
                                             }
                                         }
                                     }
-                                    ClassLog.ConsoleWriteLog("Renewed block to mining id: " + ClassMiningPoolGlobalStats.CurrentBlockId + " difficulty: " + ClassMiningPoolGlobalStats.CurrentBlockDifficulty + " hash: " + ClassMiningPoolGlobalStats.CurrentBlockHash, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleBlueLog, true);
-                                    ClassLog.ConsoleWriteLog("Current Mining Method: "+ClassMiningPoolGlobalStats.CurrentBlockMethod+" = AES ROUND: "+ClassMiningPoolGlobalStats.CurrentRoundAesRound+" AES SIZE: "+ClassMiningPoolGlobalStats.CurrentRoundAesSize+" AES BYTE KEY: "+ClassMiningPoolGlobalStats.CurrentRoundAesKey+" XOR KEY: "+ClassMiningPoolGlobalStats.CurrentRoundXorKey, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleBlueLog, true);
+                                    ClassLog.ConsoleWriteLog("New block to mining id: " + ClassMiningPoolGlobalStats.CurrentBlockId + " difficulty: " + ClassMiningPoolGlobalStats.CurrentBlockDifficulty + " hash: " + ClassMiningPoolGlobalStats.CurrentBlockHash, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleBlueLog, true);
+                                    ClassLog.ConsoleWriteLog("Current Mining Method: " + ClassMiningPoolGlobalStats.CurrentBlockMethod + " = AES ROUND: " + ClassMiningPoolGlobalStats.CurrentRoundAesRound + " AES SIZE: " + ClassMiningPoolGlobalStats.CurrentRoundAesSize + " AES BYTE KEY: " + ClassMiningPoolGlobalStats.CurrentRoundAesKey + " XOR KEY: " + ClassMiningPoolGlobalStats.CurrentRoundXorKey, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleBlueLog, true);
+                                }
+                                else
+                                {
+                                    if (splitBlockContent[1].Replace("HASH=", "") != ClassMiningPoolGlobalStats.CurrentBlockHash)
+                                    {
+                                        ClassMiningPoolGlobalStats.CurrentBlockId = splitBlockContent[0].Replace("ID=", "");
+                                        ClassMiningPoolGlobalStats.CurrentBlockHash = splitBlockContent[1].Replace("HASH=", "");
+                                        ClassMiningPoolGlobalStats.CurrentBlockAlgorithm = splitBlockContent[2].Replace("ALGORITHM=", "");
+                                        ClassMiningPoolGlobalStats.CurrentBlockSize = splitBlockContent[3].Replace("SIZE=", "");
+                                        ClassMiningPoolGlobalStats.CurrentBlockMethod = splitBlockContent[4].Replace("METHOD=", "");
+                                        ClassMiningPoolGlobalStats.CurrentBlockKey = splitBlockContent[5].Replace("KEY=", "");
+                                        ClassMiningPoolGlobalStats.CurrentBlockJob = splitBlockContent[6].Replace("JOB=", "");
+                                        ClassMiningPoolGlobalStats.CurrentBlockJobMinRange = decimal.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[0]);
+                                        ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange = decimal.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[1]);
+                                        ClassMiningPoolGlobalStats.CurrentBlockReward = splitBlockContent[7].Replace("REWARD=", "");
+                                        ClassMiningPoolGlobalStats.CurrentBlockDifficulty = splitBlockContent[8].Replace("DIFFICULTY=", "");
+                                        ClassMiningPoolGlobalStats.CurrentBlockTimestampCreate = splitBlockContent[9].Replace("TIMESTAMP=", "");
+                                        ClassMiningPoolGlobalStats.CurrentBlockIndication = splitBlockContent[10].Replace("INDICATION=", "");
+                                        ClassMiningPoolGlobalStats.CurrentBlockTemplate = packetSplit[1];
+
+                                        int idMethod = 0;
+                                        if (ListOfMiningMethodName.Count > 0)
+                                        {
+                                            for (int i = 0; i < ListOfMiningMethodName.Count; i++)
+                                            {
+                                                if (i < ListOfMiningMethodName.Count)
+                                                {
+                                                    if (ListOfMiningMethodName[i] == ClassMiningPoolGlobalStats.CurrentBlockMethod)
+                                                    {
+                                                        idMethod = i;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        var splitMethod = ListOfMiningMethodContent[idMethod].Split(new[] { "#" }, StringSplitOptions.None);
+                                        ClassMiningPoolGlobalStats.CurrentRoundAesRound = int.Parse(splitMethod[0]);
+                                        ClassMiningPoolGlobalStats.CurrentRoundAesSize = int.Parse(splitMethod[1]);
+                                        ClassMiningPoolGlobalStats.CurrentRoundAesKey = splitMethod[2];
+                                        ClassMiningPoolGlobalStats.CurrentRoundXorKey = int.Parse(splitMethod[3]);
+                                        if (ClassMinerStats.DictionaryMinerStats.Count > 0)
+                                        {
+                                            foreach (var miner in ClassMinerStats.DictionaryMinerStats)
+                                            {
+                                                if (miner.Value.ListOfMinerTcpObject.Count > 0)
+                                                {
+                                                    for (int i = 0; i < miner.Value.ListOfMinerTcpObject.Count; i++)
+                                                    {
+                                                        if (i < miner.Value.ListOfMinerTcpObject.Count)
+                                                        {
+                                                            if (miner.Value.ListOfMinerTcpObject[i] != null)
+                                                            {
+                                                                if (miner.Value.ListOfMinerTcpObject[i].IsLogged)
+                                                                {
+                                                                    miner.Value.ListOfMinerTcpObject[i].MiningPoolSendJobAsync(miner.Value.ListOfMinerTcpObject[i].CurrentMiningJobDifficulty);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        ClassLog.ConsoleWriteLog("Renewed block to mining id: " + ClassMiningPoolGlobalStats.CurrentBlockId + " difficulty: " + ClassMiningPoolGlobalStats.CurrentBlockDifficulty + " hash: " + ClassMiningPoolGlobalStats.CurrentBlockHash, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleBlueLog, true);
+                                        ClassLog.ConsoleWriteLog("Current Mining Method: " + ClassMiningPoolGlobalStats.CurrentBlockMethod + " = AES ROUND: " + ClassMiningPoolGlobalStats.CurrentRoundAesRound + " AES SIZE: " + ClassMiningPoolGlobalStats.CurrentRoundAesSize + " AES BYTE KEY: " + ClassMiningPoolGlobalStats.CurrentRoundAesKey + " XOR KEY: " + ClassMiningPoolGlobalStats.CurrentRoundXorKey, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleBlueLog, true);
+                                    }
                                 }
                             }
                         }
-                    }
-                    break;
-                case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendJobStatus:
-                    switch (packetSplit[1])
-                    {
-                        case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareUnlock:
-                            ClassLog.ConsoleWriteLog("Block ID: "+packetSplit[2]+" has been successfully found and accepted by Blockchain !", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
-                            ClassMiningPoolGlobalStats.ListBlockFound.Add(ClassMiningPoolGlobalStats.ListBlockFound.Count, int.Parse(packetSplit[2])+"|"+ClassUtility.GetCurrentDateInSecond());
-                            await Task.Factory.StartNew(() => ClassPayment.ProceedMiningScoreRewardAsync(packetSplit[2]), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Current).ConfigureAwait(false);
-                            break;
-                        case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareBad:
-                            ClassLog.ConsoleWriteLog("Block ID: " + packetSplit[2] + " has been found by someone else before the pool or the share sent is invalid.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
-                            break;
-                        case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareAleady:
-                            ClassLog.ConsoleWriteLog("Block ID: " + packetSplit[2] + " is already found by someone else.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
-                            break;
-                    }
-                    break;
+                        break;
+                    case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendJobStatus:
+                        switch (packetSplit[1])
+                        {
+                            case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareUnlock:
+                                ClassLog.ConsoleWriteLog("Block ID: " + packetSplit[2] + " has been successfully found and accepted by Blockchain !", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
+                                ClassMiningPoolGlobalStats.ListBlockFound.Add(ClassMiningPoolGlobalStats.ListBlockFound.Count, int.Parse(packetSplit[2]) + "|" + ClassUtility.GetCurrentDateInSecond());
+                                await Task.Factory.StartNew(() => ClassPayment.ProceedMiningScoreRewardAsync(packetSplit[2]), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Current).ConfigureAwait(false);
+                                break;
+                            case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareBad:
+                                ClassLog.ConsoleWriteLog("Block ID: " + packetSplit[2] + " has been found by someone else before the pool or the share sent is invalid.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                                break;
+                            case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareAleady:
+                                ClassLog.ConsoleWriteLog("Block ID: " + packetSplit[2] + " is already found by someone else.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                                break;
+                        }
+                        break;
+
+                }
+            }
+            catch
+            {
 
             }
         }
