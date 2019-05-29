@@ -94,7 +94,7 @@ namespace Xiropht_Mining_Pool.RpcWallet
             string result = string.Empty;
             if (MiningPoolSetting.MiningPoolRpcWalletUseEncryptionKey)
             {
-                requestString = ClassAlgo.GetEncryptedResult(ClassAlgoEnumeration.Rijndael, requestString, MiningPoolSetting.MiningPoolRpcWalletEncryptionKey, ClassWalletNetworkSetting.KeySize);
+                requestString = ClassAlgo.GetDecryptedResultManual(ClassAlgoEnumeration.Rijndael, requestString, MiningPoolSetting.MiningPoolRpcWalletEncryptionKey, ClassWalletNetworkSetting.KeySize);
             }
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url+requestString);
             request.AutomaticDecompression = DecompressionMethods.GZip;
@@ -111,7 +111,7 @@ namespace Xiropht_Mining_Pool.RpcWallet
             }
             if (MiningPoolSetting.MiningPoolRpcWalletUseEncryptionKey)
             {
-                result = ClassAlgo.GetDecryptedResult(ClassAlgoEnumeration.Rijndael, result, MiningPoolSetting.MiningPoolRpcWalletEncryptionKey, ClassWalletNetworkSetting.KeySize);
+                result = ClassAlgo.GetDecryptedResultManual(ClassAlgoEnumeration.Rijndael, result, MiningPoolSetting.MiningPoolRpcWalletEncryptionKey, ClassWalletNetworkSetting.KeySize);
             }
             return result;
         }

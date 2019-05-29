@@ -682,38 +682,6 @@ namespace Xiropht_Mining_Pool.Mining
                         {
                             CheckShareHashWithBlockIndicationAsync(result, mathCalculation, share, hashDecrypted);
                         }
-                        else // New PoW value system.
-                        {
-
-                            byte[] targetBlockByte = ClassUtility.FromHexString(ClassMiningPoolGlobalStats.CurrentBlockIndication);
-                            decimal targetBlockValue = Convert.ToDecimal(BitConverter.ToInt64(targetBlockByte, 0));
-                            byte[] jobByte = ClassUtility.FromHexString(hashDecrypted);
-                            decimal jobValue = Convert.ToDecimal(BitConverter.ToInt64(jobByte, 0));
-                            if (jobValue > 0)
-                            {
-                                byte[] shareByte = ClassUtility.FromHexString(share);
-                                decimal shareValue = Convert.ToDecimal(BitConverter.ToInt64(shareByte, 0));
-                                if (shareValue > 0)
-                                {
-                                    decimal sumOfWorkValue = shareValue - jobValue;
-                                    if (sumOfWorkValue > 0)
-                                    {
-                                        if (sumOfWorkValue >= targetBlockValue)
-                                        {
-                                            decimal powDifficultyValue = sumOfWorkValue - targetBlockValue;
-                                            decimal approximativeEquality = Math.Abs((powDifficultyValue / targetBlockValue) * 100);
-                                            if (approximativeEquality >= 100 && approximativeEquality <= 100.01m) // Max acceptance on the blockchain
-                                            {
-                                                ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " seems to found the block with a share PoW Value. -> " +
-                                                    " Pow Job Value: " + jobValue + " | Pow Share Value: " + shareValue + " | Sum of Work: " + sumOfWorkValue + " | Block Pow Value: " + targetBlockValue + " | Difficulty Pow Value: " + powDifficultyValue + "/" + targetBlockValue, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
-
-                                                await Task.Factory.StartNew(() => ClassNetworkBlockchain.SendPacketBlockFound(share, result, mathCalculation, hashDecrypted), CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, PriorityScheduler.AboveNormal).ConfigureAwait(false);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
 
                         try
                         {
