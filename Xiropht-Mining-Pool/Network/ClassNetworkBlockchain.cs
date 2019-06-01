@@ -8,7 +8,6 @@ using Xiropht_Connector_All.RPC;
 using Xiropht_Connector_All.Seed;
 using Xiropht_Connector_All.Setting;
 using Xiropht_Connector_All.SoloMining;
-using Xiropht_Connector_All.Utils;
 using Xiropht_Mining_Pool.Api;
 using Xiropht_Mining_Pool.Log;
 using Xiropht_Mining_Pool.Miner;
@@ -16,7 +15,6 @@ using Xiropht_Mining_Pool.Mining;
 using Xiropht_Mining_Pool.Payment;
 using Xiropht_Mining_Pool.Remote;
 using Xiropht_Mining_Pool.Setting;
-using Xiropht_Mining_Pool.Threading;
 using Xiropht_Mining_Pool.Utility;
 
 namespace Xiropht_Mining_Pool.Network
@@ -32,7 +30,7 @@ namespace Xiropht_Mining_Pool.Network
         private static List<string> ListOfMiningMethodName = new List<string>();
         private static List<string> ListOfMiningMethodContent = new List<string>();
         private const int CheckConnectionInterval = 1000;
-
+        private static bool CheckConnectionEnabled;
 
 
         #region Connection functions
@@ -53,11 +51,6 @@ namespace Xiropht_Mining_Pool.Network
             {
                 ThreadAskBlocktemplate.Abort();
                 GC.SuppressFinalize(ThreadAskBlocktemplate);
-            }
-            if (ThreadCheckConnection != null && (ThreadCheckConnection.IsAlive || ThreadCheckConnection != null))
-            {
-                ThreadCheckConnection.Abort();
-                GC.SuppressFinalize(ThreadCheckConnection);
             }
             ClassSeedNodeConnector?.DisconnectToSeed();
             try
@@ -120,37 +113,50 @@ namespace Xiropht_Mining_Pool.Network
         /// </summary>
         private static void CheckConnection()
         {
-            ThreadCheckConnection = new Thread(delegate ()
+            bool abortException = true;
+            while (abortException)
             {
-                while (!Program.Exit)
+                try
                 {
-                    if (!IsConnected || LastPacketReceived + 5 < ClassUtility.GetCurrentDateInSecond() || !ClassSeedNodeConnector.ReturnStatus())
+                    if (ThreadCheckConnection == null || (ThreadCheckConnection.IsAlive || ThreadCheckConnection != null))
                     {
-                        IsConnected = false;
-                        ClassLog.ConsoleWriteLog("Pool is disconnected from the network, reconnect now..", ClassLogEnumeration.IndexPoolGeneralErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
-                        ListOfMiningMethodName.Clear();
-
-                        var reconnectThread = new Thread(async delegate ()
-                        {
-                            while (!await ConnectPoolToBlockchainNetworkAsync())
-                            {
-                                if (Program.Exit)
-                                {
-                                    break;
-                                }
-                                ClassLog.ConsoleWriteLog("Can't connect pool to the network, retry in 1 seconds..", ClassLogEnumeration.IndexPoolGeneralErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
-                                Thread.Sleep(1000);
-                            }
-                            ClassLog.ConsoleWriteLog("Pool connected successfully to the network, start to login..", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
-                        });
-                        reconnectThread.Start();
-                        break;
-
+                        ThreadCheckConnection.Abort();
+                        GC.SuppressFinalize(ThreadCheckConnection);
                     }
-                    Thread.Sleep(10);
+
+                    ThreadCheckConnection = new Thread(async delegate ()
+                    {
+                        while (!Program.Exit)
+                        {
+                            if (!IsConnected || LastPacketReceived + 5 < ClassUtility.GetCurrentDateInSecond() || !ClassSeedNodeConnector.ReturnStatus())
+                            {
+                                IsConnected = false;
+                                ClassLog.ConsoleWriteLog("Pool is disconnected from the network, reconnect now..", ClassLogEnumeration.IndexPoolGeneralErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                                ListOfMiningMethodName.Clear();
+
+
+                                while (!await ConnectPoolToBlockchainNetworkAsync())
+                                {
+                                    if (Program.Exit)
+                                    {
+                                        break;
+                                    }
+                                    ClassLog.ConsoleWriteLog("Can't connect pool to the network, retry in 1 seconds..", ClassLogEnumeration.IndexPoolGeneralErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                                    Thread.Sleep(CheckConnectionInterval);
+                                }
+                                ClassLog.ConsoleWriteLog("Pool connected successfully to the network, start to login..", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
+                            }
+                            Thread.Sleep(CheckConnectionInterval);
+                        }
+                    });
+                    ThreadCheckConnection.Start();
                 }
-            });
-            ThreadCheckConnection.Start();
+                catch
+                {
+                    abortException = true;
+                }
+                abortException = false;
+            }
         }
 
         #endregion
@@ -194,7 +200,7 @@ namespace Xiropht_Mining_Pool.Network
                                                     LastPacketReceived = ClassUtility.GetCurrentDateInSecond();
 
 
-                                                    await Task.Factory.StartNew(delegate { HandlePacketNetworkAsync(packetEach.Replace("*", "")); }, CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                                    await Task.Factory.StartNew(delegate { HandlePacketNetworkAsync(packetEach.Replace("*", "")); }, CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current).ConfigureAwait(false);
                                                 }
                                             }
                                         }
@@ -209,7 +215,7 @@ namespace Xiropht_Mining_Pool.Network
                                     }
                                     LastPacketReceived = ClassUtility.GetCurrentDateInSecond();
 
-                                    await Task.Factory.StartNew(delegate { HandlePacketNetworkAsync(packet.Replace("*", "")); }, CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                    await Task.Factory.StartNew(delegate { HandlePacketNetworkAsync(packet.Replace("*", "")); }, CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current).ConfigureAwait(false);
 
                                 }
                             }
@@ -221,7 +227,7 @@ namespace Xiropht_Mining_Pool.Network
                                     break;
                                 }
                                 LastPacketReceived = ClassUtility.GetCurrentDateInSecond();
-                                await Task.Factory.StartNew(delegate { HandlePacketNetworkAsync(packet); }, CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                await Task.Factory.StartNew(delegate { HandlePacketNetworkAsync(packet); }, CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current).ConfigureAwait(false);
 
                             }
 
@@ -246,7 +252,11 @@ namespace Xiropht_Mining_Pool.Network
             }
             else
             {
-                CheckConnection();
+                if (!CheckConnectionEnabled)
+                {
+                    CheckConnectionEnabled = true;
+                    CheckConnection();
+                }
             }
         }
 

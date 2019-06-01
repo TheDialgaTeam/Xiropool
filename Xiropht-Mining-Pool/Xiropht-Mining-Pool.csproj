@@ -68,7 +68,6 @@
     <Compile Include="Remote\ClassRemoteApi.cs" />
     <Compile Include="RpcWallet\ClassRpcWallet.cs" />
     <Compile Include="Setting\MiningPoolSettingInitialization.cs" />
-    <Compile Include="Threading\PriorityScheduler.cs" />
     <Compile Include="Utility\ClassUtility.cs" />
     <Compile Include="Setting\MiningPoolSetting.cs" />
     <Compile Include="Program.cs" />

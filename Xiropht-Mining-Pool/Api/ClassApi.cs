@@ -16,7 +16,6 @@ using Xiropht_Mining_Pool.Miner;
 using Xiropht_Mining_Pool.Mining;
 using Xiropht_Mining_Pool.Remote;
 using Xiropht_Mining_Pool.Setting;
-using Xiropht_Mining_Pool.Threading;
 using Xiropht_Mining_Pool.Utility;
 
 namespace Xiropht_Mining_Pool.Api
@@ -82,7 +81,7 @@ namespace Xiropht_Mining_Pool.Api
                             {
                                 await clientApiHttpObject.StartHandleClientHttpAsync();
                             }
-                        }, CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, PriorityScheduler.AboveNormal).ConfigureAwait(false);
+                        }, CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current).ConfigureAwait(false);
                     }
                     catch
                     {

@@ -84,6 +84,16 @@ namespace Xiropht_Mining_Pool.Setting
         /// </summary>
         public static int MiningPoolMaxTotalBanMiner = 5;
 
+        /// <summary>
+        /// Minimum of share indication to found per job.
+        /// </summary>
+        public static int MiningPoolMinShareJob = 5;
+
+        /// <summary>
+        /// Maximum of share indication to found per job.
+        /// </summary>
+        public static int MiningPoolMaxShareJob = 30;
+
         #endregion
 
         #region Payout Settings

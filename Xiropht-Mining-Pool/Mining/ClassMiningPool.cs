@@ -14,7 +14,6 @@ using Xiropht_Mining_Pool.Log;
 using Xiropht_Mining_Pool.Miner;
 using Xiropht_Mining_Pool.Network;
 using Xiropht_Mining_Pool.Setting;
-using Xiropht_Mining_Pool.Threading;
 using Xiropht_Mining_Pool.Utility;
 
 namespace Xiropht_Mining_Pool.Mining
@@ -58,7 +57,14 @@ namespace Xiropht_Mining_Pool.Mining
                         await TcpListenerMiningPool.AcceptTcpClientAsync().ContinueWith(async clientTask =>
                         {
                             var client = await clientTask;
-                            await HandleMiner(client).ConfigureAwait(false);
+                            await Task.Factory.StartNew(async () =>
+                            {
+                                using (var minerTcpObject = new MinerTcpObject(client, MiningPoolPort))
+                                {
+                                    await Task.Delay(ClassUtility.GetRandomBetween(100, 500)); // Insert a delay.
+                                    await minerTcpObject.HandleIncomingMiner(MiningPoolPort, MiningPoolDifficultyStart).ConfigureAwait(false);
+                                }
+                            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Current).ConfigureAwait(false);
                         }).ConfigureAwait(false);
                     }
                     catch (Exception error)
@@ -91,22 +97,6 @@ namespace Xiropht_Mining_Pool.Mining
 
             }
             ClassLog.ConsoleWriteLog("Mining pool port " + MiningPoolPort + " stopped.", ClassLogEnumeration.IndexPoolMinerLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
-        }
-
-        /// <summary>
-        /// Handle incoming connection from miner.
-        /// </summary>
-        /// <param name="tcpMiner"></param>
-        private async Task HandleMiner(TcpClient tcpMiner)
-        {
-            await Task.Factory.StartNew(async () =>
-            {
-                using (var minerTcpObject = new MinerTcpObject(tcpMiner, MiningPoolPort))
-                {
-                    await Task.Delay(ClassUtility.GetRandomBetween(100, 500)); // Insert a delay.
-                    await minerTcpObject.HandleIncomingMiner(MiningPoolPort, MiningPoolDifficultyStart);
-                }
-            }, CancellationToken.None, TaskCreationOptions.LongRunning, PriorityScheduler.Lowest).ConfigureAwait(false);
         }
     }
 
@@ -433,7 +423,7 @@ namespace Xiropht_Mining_Pool.Mining
 #endif
                 Stopwatch stopwatch = new Stopwatch();
                 stopwatch.Start();
-                int totalRandomJobToFound = ClassUtility.GetRandomBetween(2, 7);
+                int totalRandomJobToFound = ClassUtility.GetRandomBetween(MiningPoolSetting.MiningPoolMinShareJob, MiningPoolSetting.MiningPoolMaxShareJob);
                 string currentMiningJobHashIndication = string.Empty;
                 while (!jobGenerated || !IsLogged || !IsConnected)
                 {
@@ -509,7 +499,7 @@ namespace Xiropht_Mining_Pool.Mining
                         if (shareHashIndication == ClassMiningPoolGlobalStats.CurrentBlockIndication)
                         {
                             ClassLog.ConsoleWriteLog("Lol ! the pool seems to have found the block " + ClassMiningPoolGlobalStats.CurrentBlockId + " himself, waiting confirmation.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
-                            await Task.Factory.StartNew(() => ClassNetworkBlockchain.SendPacketBlockFound(encryptedShare, resultCalculation, calculation, shareHashIndication), CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, PriorityScheduler.AboveNormal).ConfigureAwait(false);
+                            await Task.Factory.StartNew(() => ClassNetworkBlockchain.SendPacketBlockFound(encryptedShare, resultCalculation, calculation, shareHashIndication), CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current).ConfigureAwait(false);
                         }
                         else
                         {
@@ -573,7 +563,7 @@ namespace Xiropht_Mining_Pool.Mining
         /// <param name="share"></param>
         /// <param name="hash"></param>
         /// <returns></returns>
-        private async Task<Tuple<string, decimal>> CheckMinerShareAsync(decimal result, string mathCalculation, string share, string hash, bool trustedShare)
+        private Tuple<string, decimal> CheckMinerShare(decimal result, string mathCalculation, string share, string hash, bool trustedShare)
         {
             if (ListOfShareToFound.Count == 0)
             {
@@ -768,8 +758,15 @@ namespace Xiropht_Mining_Pool.Mining
         /// <returns></returns>
         private async void CheckShareHashWithBlockIndicationAsync(decimal result, string mathCalculation, string share, string hash)
         {
-            ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " seems to have found the block " + ClassMiningPoolGlobalStats.CurrentBlockId + ", waiting confirmation.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
-            await Task.Factory.StartNew(() => ClassNetworkBlockchain.SendPacketBlockFound(share, result, mathCalculation, hash), CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, PriorityScheduler.AboveNormal).ConfigureAwait(false);
+            try
+            {
+                await Task.Factory.StartNew(() => ClassNetworkBlockchain.SendPacketBlockFound(share, result, mathCalculation, hash), CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, TaskScheduler.Current).ConfigureAwait(false);
+                ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " seems to have found the block " + ClassMiningPoolGlobalStats.CurrentBlockId + ", waiting confirmation.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
+            }
+            catch
+            {
+
+            }
         }
 
 
@@ -792,7 +789,7 @@ namespace Xiropht_Mining_Pool.Mining
                 TcpMiner.SetSocketKeepAliveValues(20 * 60 * 1000, 30 * 1000);
                 IsConnected = true;
                 LastPacketReceived = ClassUtility.GetCurrentDateInSecond();
-                await Task.Factory.StartNew(CheckMinerConnection, CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
+                await Task.Factory.StartNew(CheckMinerConnection, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Current).ConfigureAwait(false);
                 await ListenMinerConnection();
             }
             else
@@ -846,7 +843,7 @@ namespace Xiropht_Mining_Pool.Mining
                                             {
                                                 if (packetEach.Length > 1)
                                                 {
-                                                    await Task.Factory.StartNew(() => HandleMinerPacketAsync(packetEach), CancellationToken.None, TaskCreationOptions.RunContinuationsAsynchronously, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                                    HandleMinerPacketAsync(packetEach);
                                                 }
                                             }
                                         }
@@ -937,11 +934,11 @@ namespace Xiropht_Mining_Pool.Mining
                                             };
                                             await SendPacketToMiner(jsonLoginOkPacket.ToString(Formatting.None));
                                             LastShareReceived = ClassUtility.GetCurrentDateInMilliSecond();
-                                            await Task.Factory.StartNew(() => CalculateHashrateAsync(), CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                            await Task.Factory.StartNew(() => CalculateHashrateAsync(), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Current).ConfigureAwait(false);
                                             TotalGoodShareDone++;
                                             if (ListOfShare.Count >= ListOfShareToFound.Count)
                                             {
-                                                await Task.Factory.StartNew(() => MiningPoolSendJobAsync(MiningDifficultyStart), CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                                await Task.Factory.StartNew(() => MiningPoolSendJobAsync(MiningDifficultyStart), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Current).ConfigureAwait(false);
                                             }
                                         }
                                         else
@@ -1002,11 +999,11 @@ namespace Xiropht_Mining_Pool.Mining
                                             await SendPacketToMiner(jsonLoginOkPacket.ToString(Formatting.None));
                                             ClassMinerStats.InsertMinerTcpObject(MinerWalletAddress, this);
                                             LastShareReceived = ClassUtility.GetCurrentDateInMilliSecond();
-                                            await Task.Factory.StartNew(() => CalculateHashrateAsync(), CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                            await Task.Factory.StartNew(() => CalculateHashrateAsync(), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Current).ConfigureAwait(false);
                                             TotalGoodShareDone++;
                                             if (ListOfShare.Count >= ListOfShareToFound.Count)
                                             {
-                                                await Task.Factory.StartNew(() => MiningPoolSendJobAsync(MiningDifficultyStart), CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                                await Task.Factory.StartNew(() => MiningPoolSendJobAsync(MiningDifficultyStart), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Current).ConfigureAwait(false);
                                             }
                                         }
                                         else
@@ -1057,7 +1054,7 @@ namespace Xiropht_Mining_Pool.Mining
                                 {
                                     if (ClassMinerStats.CheckMinerIsTrusted(MinerWalletAddress))
                                     {
-                                        var checkMinerShareResult = await CheckMinerShareAsync(result, mathCalculation, share, hash, true);
+                                        var checkMinerShareResult = CheckMinerShare(result, mathCalculation, share, hash, true);
                                         switch (checkMinerShareResult.Item1)
                                         {
                                             case ClassMiningPoolRequest.TypeResultShareInvalid:
@@ -1122,7 +1119,7 @@ namespace Xiropht_Mining_Pool.Mining
 
                                                 if (ListOfShare.Count >= ListOfShareToFound.Count)
                                                 {
-                                                    await Task.Factory.StartNew(() => MiningPoolSendJobAsync(checkMinerShareResult.Item2), CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                                    await Task.Factory.StartNew(() => MiningPoolSendJobAsync(checkMinerShareResult.Item2), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Current).ConfigureAwait(false);
                                                 }
 
                                                 break;
@@ -1131,7 +1128,7 @@ namespace Xiropht_Mining_Pool.Mining
                                     }
                                     else
                                     {
-                                        var checkMinerShareResult = await CheckMinerShareAsync(result, mathCalculation, share, hash, false);
+                                        var checkMinerShareResult = CheckMinerShare(result, mathCalculation, share, hash, false);
                                         switch (checkMinerShareResult.Item1)
                                         {
                                             case ClassMiningPoolRequest.TypeResultShareInvalid:
@@ -1193,7 +1190,7 @@ namespace Xiropht_Mining_Pool.Mining
                                                 TotalGoodShareDone++;
                                                 if (ListOfShare.Count >= ListOfShareToFound.Count)
                                                 {
-                                                    await Task.Factory.StartNew(() => MiningPoolSendJobAsync(checkMinerShareResult.Item2), CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                                    await Task.Factory.StartNew(() => MiningPoolSendJobAsync(checkMinerShareResult.Item2), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Current).ConfigureAwait(false);
                                                 }
                                                 break;
                                         }
@@ -1201,7 +1198,7 @@ namespace Xiropht_Mining_Pool.Mining
                                 }
                                 else
                                 {
-                                    var checkMinerShareResult = await CheckMinerShareAsync(result, mathCalculation, share, hash, false);
+                                    var checkMinerShareResult = CheckMinerShare(result, mathCalculation, share, hash, false);
                                     switch (checkMinerShareResult.Item1)
                                     {
                                         case ClassMiningPoolRequest.TypeResultShareInvalid:
@@ -1260,7 +1257,7 @@ namespace Xiropht_Mining_Pool.Mining
                                             ClassLog.ConsoleWriteLog("Miner IP " + Ip + " with Wallet Address: " + MinerWalletAddress + " good share accepted. Job: " + CurrentMiningJobDifficulty + "/" + ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange + " share received:"+packetReceived, ClassLogEnumeration.IndexPoolMinerLog);
                                             ClassMinerStats.InsertGoodShareToMiner(MinerWalletAddress, CurrentMiningJobDifficulty);
                                             TotalGoodShareDone++;
-                                            await Task.Factory.StartNew(() => MiningPoolSendJobAsync(checkMinerShareResult.Item2), CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                            await Task.Factory.StartNew(() => MiningPoolSendJobAsync(checkMinerShareResult.Item2), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Current).ConfigureAwait(false);
                                             break;
                                     }
                                 }
@@ -1335,14 +1332,14 @@ namespace Xiropht_Mining_Pool.Mining
                                 decimal tmpcurrentMiningJob = CurrentMiningJobDifficulty - ((CurrentMiningJobDifficulty * timeSpendWithoutShare) / 100);
                                 if (tmpcurrentMiningJob*10 < CurrentMiningJobDifficulty && tmpcurrentHashrate > 0)
                                 {
-                                    await Task.Factory.StartNew(() => MiningPoolSendJobAsync(tmpcurrentMiningJob), CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
+                                    await Task.Factory.StartNew(() => MiningPoolSendJobAsync(tmpcurrentMiningJob), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Current).ConfigureAwait(false);
                                 }
                             }
                         }
 
                         if (CurrentBlockHashOnMining != ClassMiningPoolGlobalStats.CurrentBlockHash || CurrentMiningJobDifficulty == 0)
                         {
-                            await Task.Factory.StartNew(() => MiningPoolSendJobAsync(CurrentMiningJobDifficulty), CancellationToken.None, TaskCreationOptions.DenyChildAttach, PriorityScheduler.Lowest).ConfigureAwait(false);
+                            await Task.Factory.StartNew(() => MiningPoolSendJobAsync(CurrentMiningJobDifficulty), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Current).ConfigureAwait(false);
                         }
 
                         JObject requestKeepAlive = new JObject
