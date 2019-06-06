@@ -197,44 +197,47 @@ namespace Xiropht_Mining_Pool.Api
                     {
                         try
                         {
-                            using (NetworkStream clientHttpReader = new NetworkStream(_client.Client))
+                            using (CancellationTokenSource cancellationPacket = new CancellationTokenSource(1000))
                             {
-                                using (BufferedStream bufferedStreamNetwork = new BufferedStream(clientHttpReader, ClassConnectorSetting.MaxNetworkPacketSize))
+                                using (NetworkStream clientHttpReader = new NetworkStream(_client.Client))
                                 {
-                                    byte[] buffer = new byte[ClassConnectorSetting.MaxNetworkPacketSize];
-
-                                    int received = await bufferedStreamNetwork.ReadAsync(buffer, 0, buffer.Length);
-                                    if (received > 0)
+                                    using (BufferedStream bufferedStreamNetwork = new BufferedStream(clientHttpReader, ClassConnectorSetting.MaxNetworkPacketSize))
                                     {
-                                        string packet = Encoding.UTF8.GetString(buffer, 0, received);
-                                        try
+                                        byte[] buffer = new byte[ClassConnectorSetting.MaxNetworkPacketSize];
+
+                                        int received = await bufferedStreamNetwork.ReadAsync(buffer, 0, buffer.Length);
+                                        if (received > 0)
                                         {
-                                            if (!GetAndCheckForwardedIp(packet))
+                                            string packet = Encoding.UTF8.GetString(buffer, 0, received);
+                                            try
                                             {
-                                                break;
+                                                if (!GetAndCheckForwardedIp(packet))
+                                                {
+                                                    break;
+                                                }
                                             }
+                                            catch
+                                            {
+
+                                            }
+
+                                            packet = ClassUtility.GetStringBetween(packet, "GET /", "HTTP");
+                                            packet = packet.Replace("%7C", "|"); // Translate special character | 
+                                            packet = packet.Replace(" ", ""); // Remove empty,space characters
+                                            ClassLog.ConsoleWriteLog("HTTP API - packet received from IP: " + _ip + " - " + packet, ClassLogEnumeration.IndexPoolApiLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog);
+
+
+                                            await HandlePacketHttpAsync(packet);
+                                            break;
                                         }
-                                        catch
+                                        else
                                         {
-
+                                            totalWhile++;
                                         }
-
-                                        packet = ClassUtility.GetStringBetween(packet, "GET /", "HTTP");
-                                        packet = packet.Replace("%7C", "|"); // Translate special character | 
-                                        packet = packet.Replace(" ", ""); // Remove empty,space characters
-                                        ClassLog.ConsoleWriteLog("HTTP API - packet received from IP: " + _ip + " - " + packet, ClassLogEnumeration.IndexPoolApiLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog);
-                                        
-
-                                        await HandlePacketHttpAsync(packet);
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        totalWhile++;
-                                    }
-                                    if (totalWhile >= 8)
-                                    {
-                                        break;
+                                        if (totalWhile >= 8)
+                                        {
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -742,14 +745,16 @@ namespace Xiropht_Mining_Pool.Api
         {
             try
             {
-
-                using (var networkStream = new NetworkStream(_client.Client))
+                using (CancellationTokenSource cancellationSendPacket = new CancellationTokenSource(1000))
                 {
-                    using (BufferedStream bufferedStreamNetwork = new BufferedStream(networkStream, ClassConnectorSetting.MaxNetworkPacketSize))
+                    using (var networkStream = new NetworkStream(_client.Client))
                     {
-                        var bytePacket = Encoding.UTF8.GetBytes(packet);
-                        await bufferedStreamNetwork.WriteAsync(bytePacket, 0, bytePacket.Length).ConfigureAwait(false);
-                        await bufferedStreamNetwork.FlushAsync().ConfigureAwait(false);
+                        using (BufferedStream bufferedStreamNetwork = new BufferedStream(networkStream, ClassConnectorSetting.MaxNetworkPacketSize))
+                        {
+                            var bytePacket = Encoding.UTF8.GetBytes(packet);
+                            await bufferedStreamNetwork.WriteAsync(bytePacket, 0, bytePacket.Length).ConfigureAwait(false);
+                            await bufferedStreamNetwork.FlushAsync().ConfigureAwait(false);
+                        }
                     }
                 }
             }

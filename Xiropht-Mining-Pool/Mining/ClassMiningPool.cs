@@ -65,7 +65,7 @@ namespace Xiropht_Mining_Pool.Mining
                                     await minerTcpObject.HandleIncomingMiner(MiningPoolPort, MiningPoolDifficultyStart).ConfigureAwait(false);
                                 }
                             }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Current).ConfigureAwait(false);
-                        }).ConfigureAwait(false);
+                        });
                     }
                     catch (Exception error)
                     {
@@ -789,7 +789,7 @@ namespace Xiropht_Mining_Pool.Mining
                 TcpMiner.SetSocketKeepAliveValues(20 * 60 * 1000, 30 * 1000);
                 IsConnected = true;
                 LastPacketReceived = ClassUtility.GetCurrentDateInSecond();
-                await Task.Factory.StartNew(CheckMinerConnection, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Current).ConfigureAwait(false);
+                await Task.Factory.StartNew(CheckMinerConnection, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Current).ConfigureAwait(false);
                 await ListenMinerConnection();
             }
             else
@@ -818,46 +818,49 @@ namespace Xiropht_Mining_Pool.Mining
                         using (var bufferPacket = new IncomingPacketConnectionObject())
                         {
                             int received = 0;
-                            while ((received = await networkReader.ReadAsync(bufferPacket.buffer, 0, bufferPacket.buffer.Length)) > 0)
+                            using (CancellationTokenSource cancellationListenPacket = new CancellationTokenSource(1000))
                             {
-                                if (!IsConnected || IsDisposed || Program.Exit)
+                                while ((received = await networkReader.ReadAsync(bufferPacket.buffer, 0, bufferPacket.buffer.Length)) > 0)
                                 {
-                                    break;
-                                }
-                                LastPacketReceived = ClassUtility.GetCurrentDateInSecond();
-                                TotalPacketReceivedPerSecond++;
-                                bufferPacket.packet = Encoding.UTF8.GetString(bufferPacket.buffer, 0, received);
-                                if (bufferPacket.packet.Contains("\n"))
-                                {
-                                    if (!string.IsNullOrEmpty(MalformedPacket))
+                                    if (!IsConnected || IsDisposed || Program.Exit)
                                     {
-                                        bufferPacket.packet = MalformedPacket + bufferPacket.packet;
-                                        MalformedPacket = string.Empty;
+                                        break;
                                     }
-                                    var splitPacket = bufferPacket.packet.Split(new[] { "\n" }, StringSplitOptions.None);
-                                    foreach (var packetEach in splitPacket)
+                                    LastPacketReceived = ClassUtility.GetCurrentDateInSecond();
+                                    TotalPacketReceivedPerSecond++;
+                                    bufferPacket.packet = Encoding.UTF8.GetString(bufferPacket.buffer, 0, received);
+                                    if (bufferPacket.packet.Contains("\n"))
                                     {
-                                        if (packetEach != null)
+                                        if (!string.IsNullOrEmpty(MalformedPacket))
                                         {
-                                            if (!string.IsNullOrEmpty(packetEach))
+                                            bufferPacket.packet = MalformedPacket + bufferPacket.packet;
+                                            MalformedPacket = string.Empty;
+                                        }
+                                        var splitPacket = bufferPacket.packet.Split(new[] { "\n" }, StringSplitOptions.None);
+                                        foreach (var packetEach in splitPacket)
+                                        {
+                                            if (packetEach != null)
                                             {
-                                                if (packetEach.Length > 1)
+                                                if (!string.IsNullOrEmpty(packetEach))
                                                 {
-                                                    HandleMinerPacketAsync(packetEach);
+                                                    if (packetEach.Length > 1)
+                                                    {
+                                                        HandleMinerPacketAsync(packetEach);
+                                                    }
                                                 }
                                             }
                                         }
                                     }
-                                }
-                                else
-                                {
-                                    if (MalformedPacket.Length >= int.MaxValue-1 || (long)(MalformedPacket.Length + bufferPacket.packet.Length) >= int.MaxValue-1)
-                                    {
-                                        MalformedPacket = string.Empty;
-                                    }
                                     else
                                     {
-                                        MalformedPacket += bufferPacket.packet;
+                                        if (MalformedPacket.Length >= int.MaxValue - 1 || (long)(MalformedPacket.Length + bufferPacket.packet.Length) >= int.MaxValue - 1)
+                                        {
+                                            MalformedPacket = string.Empty;
+                                        }
+                                        else
+                                        {
+                                            MalformedPacket += bufferPacket.packet;
+                                        }
                                     }
                                 }
                             }
