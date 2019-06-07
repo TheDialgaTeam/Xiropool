@@ -74,17 +74,50 @@ namespace Xiropht_Mining_Pool
                         {
                             ClassLog.ConsoleWriteLog("Connect Pool to the network for retrieve current blocktemplate..", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
 
-                            Certificate = ClassUtils.GenerateCertificate();
-                            while (!await ClassNetworkBlockchain.ConnectPoolToBlockchainNetworkAsync())
+                            bool notConnected = true;
+                            while (notConnected)
                             {
-                                Thread.Sleep(5000);
-                                ClassLog.ConsoleWriteLog("Can't connect Pool to the network, retry in 5 seconds.. (Press CTRL+C to cancel and close the pool.)", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
+                                Certificate = ClassUtils.GenerateCertificate();
+
+                                while (!await ClassNetworkBlockchain.ConnectToBlockchainAsync())
+                                {
+                                    Thread.Sleep(5000);
+                                    ClassLog.ConsoleWriteLog("Can't connect Pool to the network, retry in 5 seconds.. (Press CTRL+C to cancel and close the pool.)", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                                }
+                                Certificate = ClassUtils.GenerateCertificate();
+                                ClassLog.ConsoleWriteLog("Certificate generate, send to the network..", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
+                                if (!await ClassNetworkBlockchain.SendPacketToNetworkBlockchain(Certificate, false))
+                                {
+                                    ClassLog.ConsoleWriteLog("Can't send certificate, reconnect now..", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                                }
+                                else
+                                {
+                                    ClassLog.ConsoleWriteLog("Certificate sent, start to login..", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
+                                    ClassNetworkBlockchain.ListenBlockchain();
+                                    Thread.Sleep(1000);
+                                    if (!await ClassNetworkBlockchain.SendPacketToNetworkBlockchain(ClassConnectorSettingEnumeration.MinerLoginType + "|" + MiningPoolSetting.MiningPoolWalletAddress, true))
+                                    {
+                                        ClassLog.ConsoleWriteLog("Can't login to the network, reconnect now.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                                    }
+                                    else
+                                    {
+                                        ClassLog.ConsoleWriteLog("Login successfully sent, waiting confirmation..", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
+                                        notConnected = false;
+                                    }
+                                }
+                                if (notConnected)
+                                {
+                                    ClassLog.ConsoleWriteLog("Can't long Pool to the network, retry in 5 seconds.. (Press CTRL+C to cancel and close the pool.)", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
+                                    Thread.Sleep(5000);
+                                }
+                                else
+                                {
+                                    break;
+                                }
                             }
-                            ClassLog.ConsoleWriteLog("Pool connected to the network for retrieve current blocktemplate.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
                         })
                         {
-                            IsBackground = true,
-                            Priority = ThreadPriority.Highest
+                            IsBackground = true
                         };
                         ThreadNetworkBlockchain.Start();
                         if (MiningPoolSetting.MiningPoolEnableFiltering)
@@ -258,7 +291,6 @@ namespace Xiropht_Mining_Pool
                                         Exit = true;
                                         new Thread(delegate ()
                                         {
-                                            ClassNetworkBlockchain.StopNetworkBlockchain();
                                             if (ListMiningPool.Count > 0)
                                             {
                                                 foreach (var miningPool in ListMiningPool)

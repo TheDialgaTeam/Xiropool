@@ -8,6 +8,7 @@ using Xiropht_Connector_All.RPC;
 using Xiropht_Connector_All.Seed;
 using Xiropht_Connector_All.Setting;
 using Xiropht_Connector_All.SoloMining;
+using Xiropht_Connector_All.Utils;
 using Xiropht_Mining_Pool.Api;
 using Xiropht_Mining_Pool.Log;
 using Xiropht_Mining_Pool.Miner;
@@ -21,262 +22,183 @@ namespace Xiropht_Mining_Pool.Network
 {
     public class ClassNetworkBlockchain
     {
-        private static ClassSeedNodeConnector ClassSeedNodeConnector;
+        private static ClassSeedNodeConnector classSeedNodeConnector;
         public static bool IsConnected;
-        private static long LastPacketReceived;
         private static Thread ThreadCheckConnection;
         private static Thread ThreadListenNetwork;
-        private static Thread ThreadAskBlocktemplate;
         private static List<string> ListOfMiningMethodName = new List<string>();
         private static List<string> ListOfMiningMethodContent = new List<string>();
-        private const int CheckConnectionInterval = 1000;
-        private static bool CheckConnectionEnabled;
+        private static Thread ThreadListenBlockchain;
+        private static Thread ThreadAskMiningMethod;
+        private static long _lastPacketReceivedFromBlockchain;
+        public static bool FirstStart;
+        public static bool LoginAccepted;
+
 
 
         #region Connection functions
 
         /// <summary>
-        /// Connect pool to the blockchain network.
+        /// Connect to the network of blockchain.
         /// </summary>
         /// <returns></returns>
-        public static async Task<bool> ConnectPoolToBlockchainNetworkAsync()
+        public static async Task<bool> ConnectToBlockchainAsync()
         {
-            bool exception = true;
-            while (exception)
-            {
-                try
-                {
-                    if (ThreadListenNetwork != null && (ThreadListenNetwork.IsAlive || ThreadListenNetwork != null))
-                    {
-                        ThreadListenNetwork.Abort();
-                        GC.SuppressFinalize(ThreadListenNetwork);
-                    }
-                    exception = false;
-                }
-                catch
-                {
-                    exception = true;
-                }
-                Thread.Sleep(100);
-            }
 
-            exception = true;
-            while (exception)
-            {
-                try
-                {
-                    if (ThreadAskBlocktemplate != null && (ThreadAskBlocktemplate.IsAlive || ThreadAskBlocktemplate != null))
-                    {
-                        ThreadAskBlocktemplate.Abort();
-                        GC.SuppressFinalize(ThreadAskBlocktemplate);
-                    }
-                    exception = false;
-                }
-                catch
-                {
-                    exception = true;
-                }
-                Thread.Sleep(100);
-            }
-            try
-            {
-                ClassSeedNodeConnector?.DisconnectToSeed();
-                while (ClassSeedNodeConnector.ReturnStatus())
-                {
-                    ClassSeedNodeConnector?.DisconnectToSeed();
-                }
-                ClassSeedNodeConnector?.Dispose();
-                ClassSeedNodeConnector = null;
-            }
-            catch
-            {
+            classSeedNodeConnector?.DisconnectToSeed();
+            classSeedNodeConnector = null;
+            classSeedNodeConnector = new ClassSeedNodeConnector();
 
-            }
 
-            ClassSeedNodeConnector = new ClassSeedNodeConnector();
-
-            if (!await ClassSeedNodeConnector.StartConnectToSeedAsync(string.Empty))
+            ListOfMiningMethodName?.Clear();
+            ListOfMiningMethodContent?.Clear();
+            if (!await classSeedNodeConnector.StartConnectToSeedAsync(string.Empty))
             {
                 IsConnected = false;
                 return false;
             }
+            if (!FirstStart)
+            {
+                FirstStart = true;
+                CheckBlockchainConnection();
+            }
             IsConnected = true;
-            LastPacketReceived = ClassUtility.GetCurrentDateInSecond();
-            ListenConnectionAsync();
             return true;
         }
 
-        /// <summary>
-        /// Stop the network connection to the blockchain and stop network checker.
-        /// </summary>
-        public static void StopNetworkBlockchain()
+
+        private static void CheckBlockchainConnection()
         {
-            ClassLog.ConsoleWriteLog("Stop connection to blockchain network..", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
-            if (ThreadCheckConnection != null && (ThreadCheckConnection.IsAlive || ThreadCheckConnection != null))
+            _lastPacketReceivedFromBlockchain = DateTimeOffset.Now.ToUnixTimeSeconds();
+            var threadCheckConnection = new Thread(async delegate ()
             {
-                ThreadCheckConnection.Abort();
-                GC.SuppressFinalize(ThreadCheckConnection);
-            }
-            Thread.Sleep(1000);
-            if (ThreadListenNetwork != null && (ThreadListenNetwork.IsAlive || ThreadListenNetwork != null))
-            {
-                ThreadListenNetwork.Abort();
-                GC.SuppressFinalize(ThreadListenNetwork);
-            }
-            if (ThreadAskBlocktemplate != null && (ThreadAskBlocktemplate.IsAlive || ThreadAskBlocktemplate != null))
-            {
-                ThreadAskBlocktemplate.Abort();
-                GC.SuppressFinalize(ThreadAskBlocktemplate);
-            }
-            IsConnected = false;
-            ClassSeedNodeConnector?.DisconnectToSeed();
-            ClassSeedNodeConnector?.Dispose();
-            ClassLog.ConsoleWriteLog("Connection to blockchain network stopped.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
+                while (true)
+                {
+                    Thread.Sleep(1000);
+                    if (!IsConnected || !classSeedNodeConnector.ReturnStatus())
+                    {
+                        if (ThreadListenBlockchain != null && (ThreadListenBlockchain.IsAlive || ThreadListenBlockchain != null))
+                        {
+                            ThreadListenBlockchain.Abort();
+                            GC.SuppressFinalize(ThreadListenBlockchain);
+                        }
+                        if (ThreadAskMiningMethod != null && (ThreadAskMiningMethod.IsAlive || ThreadAskMiningMethod != null))
+                        {
+                            ThreadAskMiningMethod.Abort();
+                            GC.SuppressFinalize(ThreadAskMiningMethod);
+                        }
+                        ClassMiningPoolGlobalStats.CurrentBlockTemplate = string.Empty;
+                        ClassMiningPoolGlobalStats.CurrentBlockId = string.Empty;
+                        IsConnected = false;
+                        LoginAccepted = false;
+                        while (!await ConnectToBlockchainAsync())
+                        {
+                            ClassLog.ConsoleWriteLog("Can't connect to the network, retry in 5 seconds..", ClassLogEnumeration.IndexPoolGeneralErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                            Thread.Sleep(5000);
+                        }
+                        ClassLog.ConsoleWriteLog("Connection success, generate dynamic certificate for the network.", ClassLogEnumeration.IndexPoolGeneralErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
+                        Program.Certificate = ClassUtils.GenerateCertificate();
+                        ClassLog.ConsoleWriteLog("Certificate generate, send to the network..", ClassLogEnumeration.IndexPoolGeneralErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
+                        if (!await SendPacketToNetworkBlockchain(Program.Certificate, false))
+                        {
+                            ClassLog.ConsoleWriteLog("Can't send certificate, reconnect now..",  ClassLogEnumeration.IndexPoolGeneralErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                            IsConnected = false;
+                        }
+                        else
+                        {
+                            Thread.Sleep(1000);
+                            ClassLog.ConsoleWriteLog("Certificate sent, start to login..", ClassLogEnumeration.IndexPoolGeneralErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
+                            ListenBlockchain();
+                            if (!await SendPacketToNetworkBlockchain(ClassConnectorSettingEnumeration.MinerLoginType + "|" + MiningPoolSetting.MiningPoolWalletAddress, true))
+                            {
+                                ClassLog.ConsoleWriteLog("Can't login to the network, reconnect now.", ClassLogEnumeration.IndexPoolGeneralErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                                IsConnected = false;
+                            }
+                            else
+                            {
+                                ClassLog.ConsoleWriteLog("Login successfully sent, waiting confirmation.. (Wait 5 seconds maximum.)", ClassLogEnumeration.IndexPoolGeneralErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
+                                IsConnected = true;
+                                Thread.Sleep(ClassConnectorSetting.MaxTimeoutConnect);
+                                if (!LoginAccepted)
+                                {
+                                    IsConnected = false;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            threadCheckConnection.Start();
         }
 
+
         /// <summary>
-        /// Check network connection opened.
+        /// Listen Blockchain packet.
         /// </summary>
-        private static void CheckConnection()
+        public static void ListenBlockchain()
         {
-            bool abortException = true;
-            while (abortException)
+            if (ThreadListenBlockchain != null && (ThreadListenBlockchain.IsAlive || ThreadListenBlockchain != null))
             {
-                try
-                {
-                    if (ThreadCheckConnection == null || (ThreadCheckConnection.IsAlive || ThreadCheckConnection != null))
-                    {
-                        ThreadCheckConnection.Abort();
-                        GC.SuppressFinalize(ThreadCheckConnection);
-                    }
-
-                    ThreadCheckConnection = new Thread(async delegate ()
-                    {
-                        while (!Program.Exit)
-                        {
-                            if (!IsConnected || LastPacketReceived + 5 < ClassUtility.GetCurrentDateInSecond() || !ClassSeedNodeConnector.ReturnStatus())
-                            {
-                                IsConnected = false;
-                                ClassLog.ConsoleWriteLog("Pool is disconnected from the network, reconnect now..", ClassLogEnumeration.IndexPoolGeneralErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
-                                ListOfMiningMethodName.Clear();
-
-
-                                while (!await ConnectPoolToBlockchainNetworkAsync())
-                                {
-                                    if (Program.Exit)
-                                    {
-                                        break;
-                                    }
-                                    ClassLog.ConsoleWriteLog("Can't connect pool to the network, retry in 1 seconds..", ClassLogEnumeration.IndexPoolGeneralErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
-                                    Thread.Sleep(CheckConnectionInterval);
-                                }
-                                ClassLog.ConsoleWriteLog("Pool connected successfully to the network, start to login..", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleYellowLog, true);
-                            }
-                            Thread.Sleep(CheckConnectionInterval);
-                        }
-                    });
-                    ThreadCheckConnection.Start();
-                }
-                catch
-                {
-                    abortException = true;
-                }
-                abortException = false;
+                ThreadListenBlockchain.Abort();
+                GC.SuppressFinalize(ThreadListenBlockchain);
             }
+            ThreadListenBlockchain = new Thread(async delegate ()
+            {
+                while (IsConnected)
+                {
+                    try
+                    {
+
+                        string packet = await classSeedNodeConnector.ReceivePacketFromSeedNodeAsync(Program.Certificate, false, true).ConfigureAwait(false);
+                        if (packet == ClassSeedNodeStatus.SeedError)
+                        {
+                            ClassLog.ConsoleWriteLog("Connection to network lost, reconnect in 5 seconds..", ClassLogEnumeration.IndexPoolGeneralErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                            IsConnected = false;
+                            break;
+                        }
+                        _lastPacketReceivedFromBlockchain = DateTimeOffset.Now.ToUnixTimeSeconds();
+
+                        if (packet.Contains("*"))
+                        {
+                            var splitPacket = packet.Split(new[] { "*" }, StringSplitOptions.None);
+                            if (splitPacket.Length > 1)
+                            {
+                                foreach (var packetEach in splitPacket)
+                                {
+                                    if (packetEach != null)
+                                    {
+                                        if (!string.IsNullOrEmpty(packetEach))
+                                        {
+
+                                            await HandlePacketNetworkAsync(packetEach.Replace("*", ""));
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                await HandlePacketNetworkAsync(packet.Replace("*", ""));
+                            }
+                        }
+                        else
+                        {
+                            await HandlePacketNetworkAsync(packet);
+                        }
+                    }
+                    catch
+                    {
+                        ClassLog.ConsoleWriteLog("Connection to network lost, reconnect in 5 seconds..", ClassLogEnumeration.IndexPoolGeneralErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                        IsConnected = false;
+                        break;
+                    }
+                }
+            });
+            ThreadListenBlockchain.Start();
         }
 
         #endregion
 
         #region Handle packet received functions
-
-        /// <summary>
-        /// Listen packets received from the network of blockchain.
-        /// </summary>
-        private static async void ListenConnectionAsync()
-        {
-            LastPacketReceived = ClassUtility.GetCurrentDateInSecond();
-            ThreadListenNetwork = new Thread(async delegate ()
-            {
-                try
-                {
-                    while (IsConnected && ClassSeedNodeConnector.ReturnStatus() && !Program.Exit)
-                    {
-                        try
-                        {
-                            using (CancellationTokenSource cancelListenPacket = new CancellationTokenSource(100))
-                            {
-                                string packet = await ClassSeedNodeConnector.ReceivePacketFromSeedNodeAsync(Program.Certificate, false, true);
-
-                                if (packet.Contains("*"))
-                                {
-                                    var splitPacket = packet.Split(new[] { "*" }, StringSplitOptions.None);
-                                    if (splitPacket.Length > 1)
-                                    {
-                                        foreach (var packetEach in splitPacket)
-                                        {
-                                            if (packetEach != null)
-                                            {
-                                                if (!string.IsNullOrEmpty(packetEach))
-                                                {
-                                                    if (packetEach.Length > 1)
-                                                    {
-                                                        if (packetEach.Replace("*", "") == ClassSeedNodeStatus.SeedError)
-                                                        {
-                                                            ClassLog.ConsoleWriteLog("Connection to the network lost, reconnect the pool to the network..", ClassLogEnumeration.IndexPoolGeneralErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
-                                                            break;
-                                                        }
-                                                        LastPacketReceived = ClassUtility.GetCurrentDateInSecond();
-
-
-                                                        HandlePacketNetworkAsync(packetEach.Replace("*", ""));
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        LastPacketReceived = ClassUtility.GetCurrentDateInSecond();
-                                        HandlePacketNetworkAsync(packet.Replace("*", ""));
-                                    }
-                                }
-                                else
-                                {
-                                    LastPacketReceived = ClassUtility.GetCurrentDateInSecond();
-                                    HandlePacketNetworkAsync(packet);
-                                }
-                            }
-                        }
-                        catch (Exception error)
-                        {
-                            ClassLog.ConsoleWriteLog("Listen packet from network blockchain error, exception: " + error.Message, ClassLogEnumeration.IndexPoolGeneralErrorLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
-                            break;
-                        }
-                    }
-                    IsConnected = false;
-                }
-                catch
-                {
-                    IsConnected = false;
-                }
-            });
-            ThreadListenNetwork.Start();
-            await Task.Factory.StartNew(async () =>
-            {
-                if (!await LoginConnection())
-                {
-                    IsConnected = false;
-                }
-                else
-                {
-                    if (!CheckConnectionEnabled)
-                    {
-                        CheckConnectionEnabled = true;
-                        CheckConnection();
-                    }
-                }
-            }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Current).ConfigureAwait(false);
-        }
 
         /// <summary>
         /// Send packet share for attempt to unlock the block.
@@ -299,93 +221,159 @@ namespace Xiropht_Mining_Pool.Network
         /// Handle packet received from the network.
         /// </summary>
         /// <param name="packet"></param>
-        private static async void HandlePacketNetworkAsync(string packet)
+        private static async Task HandlePacketNetworkAsync(string packet)
         {
-            try
-            {
-                packet = packet.Replace("*", "");
-                var packetSplit = packet.Split(new[] { "|" }, StringSplitOptions.None);
 
-                switch (packetSplit[0])
-                {
-                    case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendLoginAccepted:
-                        ClassLog.ConsoleWriteLog("Mining pool logged successfully to the blockchain network.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
-                        AskMiningElementsConnectionAsync();
-                        break;
-                    case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendListBlockMethod:
-                        var methodList = packetSplit[1];
-                        if (methodList.Contains("#"))
+            packet = packet.Replace("*", "");
+            var packetSplit = packet.Split(new[] { "|" }, StringSplitOptions.None);
+
+            switch (packetSplit[0])
+            {
+                case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendLoginAccepted:
+                    LoginAccepted = true;
+                    ClassLog.ConsoleWriteLog("Mining pool logged successfully to the blockchain network.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
+                    AskMiningMethod();
+                    break;
+                case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendListBlockMethod:
+                    var methodList = packetSplit[1];
+                    if (methodList.Contains("#"))
+                    {
+                        var splitMethodList = methodList.Split(new[] { "#" }, StringSplitOptions.None);
+                        if (ListOfMiningMethodName.Count > 1)
                         {
-                            var splitMethodList = methodList.Split(new[] { "#" }, StringSplitOptions.None);
-                            if (ListOfMiningMethodName.Count > 1)
+                            foreach (var methodName in splitMethodList)
                             {
-                                foreach (var methodName in splitMethodList)
+                                if (!string.IsNullOrEmpty(methodName))
                                 {
-                                    if (!string.IsNullOrEmpty(methodName))
+                                    if (ListOfMiningMethodName.Contains(methodName) == false)
                                     {
-                                        if (ListOfMiningMethodName.Contains(methodName) == false)
+                                        ListOfMiningMethodName.Add(methodName);
+                                    }
+                                    if (!await SendPacketToNetworkBlockchain(ClassSoloMiningPacketEnumeration.SoloMiningSendPacketEnumeration.ReceiveAskContentBlockMethod + "|" + methodName, true).ConfigureAwait(false))
+                                    {
+                                        IsConnected = false;
+                                        break;
+                                    }
+
+                                    await Task.Delay(1000);
+                                }
+                            }
+                        }
+                        else
+                        {
+
+                            foreach (var methodName in splitMethodList)
+                            {
+                                if (!string.IsNullOrEmpty(methodName))
+                                {
+                                    if (ListOfMiningMethodName.Contains(methodName) == false)
+                                    {
+                                        ListOfMiningMethodName.Add(methodName);
+                                    }
+                                    if (!await SendPacketToNetworkBlockchain(ClassSoloMiningPacketEnumeration.SoloMiningSendPacketEnumeration.ReceiveAskContentBlockMethod + "|" + methodName, true).ConfigureAwait(false))
+                                    {
+                                        IsConnected = false;
+                                        break;
+                                    }
+                                    await Task.Delay(1000);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (ListOfMiningMethodName.Contains(methodList) == false)
+                        {
+                            ListOfMiningMethodName.Add(methodList);
+                        }
+
+                        if (!await SendPacketToNetworkBlockchain(ClassSoloMiningPacketEnumeration.SoloMiningSendPacketEnumeration.ReceiveAskContentBlockMethod + "|" + methodList, true).ConfigureAwait(false))
+                        {
+                            IsConnected = false;
+                        }
+                    }
+                    break;
+                case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendContentBlockMethod:
+                    if (ListOfMiningMethodContent.Count == 0)
+                    {
+                        ListOfMiningMethodContent.Add(packetSplit[1]);
+                    }
+                    else
+                    {
+                        ListOfMiningMethodContent[0] = packetSplit[1];
+                    }
+                    break;
+                case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendCurrentBlockMining:
+                    if (packetSplit[1] != ClassMiningPoolGlobalStats.CurrentBlockTemplate)
+                    {
+                        var splitBlockContent = packetSplit[1].Split(new[] { "&" }, StringSplitOptions.None);
+                        if (splitBlockContent[0].Replace("ID=", "") != "" && splitBlockContent[0].Replace("ID=", "").Length > 0)
+                        {
+                            if (splitBlockContent[0].Replace("ID=", "") != ClassMiningPoolGlobalStats.CurrentBlockId)
+                            {
+
+                                ClassMiningPoolGlobalStats.CurrentBlockId = splitBlockContent[0].Replace("ID=", "");
+                                ClassMiningPoolGlobalStats.CurrentBlockHash = splitBlockContent[1].Replace("HASH=", "");
+                                ClassMiningPoolGlobalStats.CurrentBlockAlgorithm = splitBlockContent[2].Replace("ALGORITHM=", "");
+                                ClassMiningPoolGlobalStats.CurrentBlockSize = splitBlockContent[3].Replace("SIZE=", "");
+                                ClassMiningPoolGlobalStats.CurrentBlockMethod = splitBlockContent[4].Replace("METHOD=", "");
+                                ClassMiningPoolGlobalStats.CurrentBlockKey = splitBlockContent[5].Replace("KEY=", "");
+                                ClassMiningPoolGlobalStats.CurrentBlockJob = splitBlockContent[6].Replace("JOB=", "");
+                                ClassMiningPoolGlobalStats.CurrentBlockJobMinRange = decimal.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[0]);
+                                ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange = decimal.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[1]);
+                                ClassMiningPoolGlobalStats.CurrentBlockReward = splitBlockContent[7].Replace("REWARD=", "");
+                                ClassMiningPoolGlobalStats.CurrentBlockDifficulty = splitBlockContent[8].Replace("DIFFICULTY=", "");
+                                ClassMiningPoolGlobalStats.CurrentBlockTimestampCreate = splitBlockContent[9].Replace("TIMESTAMP=", "");
+                                ClassMiningPoolGlobalStats.CurrentBlockIndication = splitBlockContent[10].Replace("INDICATION=", "");
+                                ClassMiningPoolGlobalStats.CurrentBlockTemplate = packetSplit[1];
+                                int idMethod = 0;
+                                if (ListOfMiningMethodName.Count > 0)
+                                {
+                                    for (int i = 0; i < ListOfMiningMethodName.Count; i++)
+                                    {
+                                        if (i < ListOfMiningMethodName.Count)
                                         {
-                                            ListOfMiningMethodName.Add(methodName);
-                                        }
-                                        if (!await SendPacketToNetworkBlockchain(ClassSoloMiningPacketEnumeration.SoloMiningSendPacketEnumeration.ReceiveAskContentBlockMethod + "|" + methodName, true).ConfigureAwait(false))
-                                        {
-                                            IsConnected = false;
-                                            break;
+                                            if (ListOfMiningMethodName[i] == ClassMiningPoolGlobalStats.CurrentBlockMethod)
+                                            {
+                                                idMethod = i;
+                                            }
                                         }
                                     }
                                 }
+                                var splitMethod = ListOfMiningMethodContent[idMethod].Split(new[] { "#" }, StringSplitOptions.None);
+                                ClassMiningPoolGlobalStats.CurrentRoundAesRound = int.Parse(splitMethod[0]);
+                                ClassMiningPoolGlobalStats.CurrentRoundAesSize = int.Parse(splitMethod[1]);
+                                ClassMiningPoolGlobalStats.CurrentRoundAesKey = splitMethod[2];
+                                ClassMiningPoolGlobalStats.CurrentRoundXorKey = int.Parse(splitMethod[3]);
+                                if (ClassMinerStats.DictionaryMinerStats.Count > 0)
+                                {
+                                    foreach (var miner in ClassMinerStats.DictionaryMinerStats)
+                                    {
+                                        if (miner.Value.ListOfMinerTcpObject.Count > 0)
+                                        {
+                                            for (int i = 0; i < miner.Value.ListOfMinerTcpObject.Count; i++)
+                                            {
+                                                if (i < miner.Value.ListOfMinerTcpObject.Count)
+                                                {
+                                                    if (miner.Value.ListOfMinerTcpObject[i] != null)
+                                                    {
+                                                        if (miner.Value.ListOfMinerTcpObject[i].IsLogged)
+                                                        {
+                                                            miner.Value.ListOfMinerTcpObject[i].MiningPoolSendJobAsync(miner.Value.ListOfMinerTcpObject[i].CurrentMiningJobDifficulty);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                ClassLog.ConsoleWriteLog("New block to mining id: " + ClassMiningPoolGlobalStats.CurrentBlockId + " difficulty: " + ClassMiningPoolGlobalStats.CurrentBlockDifficulty + " hash: " + ClassMiningPoolGlobalStats.CurrentBlockHash, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleBlueLog, true);
+                                ClassLog.ConsoleWriteLog("Current Mining Method: " + ClassMiningPoolGlobalStats.CurrentBlockMethod + " = AES ROUND: " + ClassMiningPoolGlobalStats.CurrentRoundAesRound + " AES SIZE: " + ClassMiningPoolGlobalStats.CurrentRoundAesSize + " AES BYTE KEY: " + ClassMiningPoolGlobalStats.CurrentRoundAesKey + " XOR KEY: " + ClassMiningPoolGlobalStats.CurrentRoundXorKey, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleBlueLog, true);
                             }
                             else
                             {
-                                foreach (var methodName in splitMethodList)
+                                if (splitBlockContent[1].Replace("HASH=", "") != ClassMiningPoolGlobalStats.CurrentBlockHash)
                                 {
-                                    if (!string.IsNullOrEmpty(methodName))
-                                    {
-                                        if (ListOfMiningMethodName.Contains(methodName) == false)
-                                        {
-                                            ListOfMiningMethodName.Add(methodName);
-                                        }
-                                        if (!await SendPacketToNetworkBlockchain(ClassSoloMiningPacketEnumeration.SoloMiningSendPacketEnumeration.ReceiveAskContentBlockMethod + "|" + methodName, true).ConfigureAwait(false))
-                                        {
-                                            IsConnected = false;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            if (ListOfMiningMethodName.Contains(methodList) == false)
-                            {
-                                ListOfMiningMethodName.Add(methodList);
-                            }
-
-                            if (!await SendPacketToNetworkBlockchain(ClassSoloMiningPacketEnumeration.SoloMiningSendPacketEnumeration.ReceiveAskContentBlockMethod + "|" + methodList, true).ConfigureAwait(false))
-                            {
-                                IsConnected = false;
-                            }
-                        }
-                        break;
-                    case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendContentBlockMethod:
-                        if (ListOfMiningMethodContent.Count == 0)
-                        {
-                            ListOfMiningMethodContent.Add(packetSplit[1]);
-                        }
-                        else
-                        {
-                            ListOfMiningMethodContent[0] = packetSplit[1];
-                        }
-                        break;
-                    case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendCurrentBlockMining:
-                        if (packetSplit[1] != ClassMiningPoolGlobalStats.CurrentBlockTemplate)
-                        {
-                            var splitBlockContent = packetSplit[1].Split(new[] { "&" }, StringSplitOptions.None);
-                            if (splitBlockContent[0].Replace("ID=", "") != "" && splitBlockContent[0].Replace("ID=", "").Length > 0)
-                            {
-                                if (splitBlockContent[0].Replace("ID=", "") != ClassMiningPoolGlobalStats.CurrentBlockId)
-                                {
-
                                     ClassMiningPoolGlobalStats.CurrentBlockId = splitBlockContent[0].Replace("ID=", "");
                                     ClassMiningPoolGlobalStats.CurrentBlockHash = splitBlockContent[1].Replace("HASH=", "");
                                     ClassMiningPoolGlobalStats.CurrentBlockAlgorithm = splitBlockContent[2].Replace("ALGORITHM=", "");
@@ -400,6 +388,7 @@ namespace Xiropht_Mining_Pool.Network
                                     ClassMiningPoolGlobalStats.CurrentBlockTimestampCreate = splitBlockContent[9].Replace("TIMESTAMP=", "");
                                     ClassMiningPoolGlobalStats.CurrentBlockIndication = splitBlockContent[10].Replace("INDICATION=", "");
                                     ClassMiningPoolGlobalStats.CurrentBlockTemplate = packetSplit[1];
+
                                     int idMethod = 0;
                                     if (ListOfMiningMethodName.Count > 0)
                                     {
@@ -421,125 +410,52 @@ namespace Xiropht_Mining_Pool.Network
                                     ClassMiningPoolGlobalStats.CurrentRoundXorKey = int.Parse(splitMethod[3]);
                                     if (ClassMinerStats.DictionaryMinerStats.Count > 0)
                                     {
-                                        await Task.Factory.StartNew(() =>
+                                        foreach (var miner in ClassMinerStats.DictionaryMinerStats)
                                         {
-                                            foreach (var miner in ClassMinerStats.DictionaryMinerStats)
+                                            if (miner.Value.ListOfMinerTcpObject.Count > 0)
                                             {
-                                                if (miner.Value.ListOfMinerTcpObject.Count > 0)
+                                                for (int i = 0; i < miner.Value.ListOfMinerTcpObject.Count; i++)
                                                 {
-                                                    for (int i = 0; i < miner.Value.ListOfMinerTcpObject.Count; i++)
+                                                    if (i < miner.Value.ListOfMinerTcpObject.Count)
                                                     {
-                                                        if (i < miner.Value.ListOfMinerTcpObject.Count)
+                                                        if (miner.Value.ListOfMinerTcpObject[i] != null)
                                                         {
-                                                            if (miner.Value.ListOfMinerTcpObject[i] != null)
+                                                            if (miner.Value.ListOfMinerTcpObject[i].IsLogged)
                                                             {
-                                                                if (miner.Value.ListOfMinerTcpObject[i].IsLogged)
-                                                                {
-                                                                    miner.Value.ListOfMinerTcpObject[i].MiningPoolSendJobAsync(miner.Value.ListOfMinerTcpObject[i].CurrentMiningJobDifficulty);
-                                                                }
+                                                                miner.Value.ListOfMinerTcpObject[i].MiningPoolSendJobAsync(miner.Value.ListOfMinerTcpObject[i].CurrentMiningJobDifficulty);
                                                             }
                                                         }
                                                     }
                                                 }
                                             }
-                                        }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Current).ConfigureAwait(false);
+                                        }
                                     }
-                                    ClassLog.ConsoleWriteLog("New block to mining id: " + ClassMiningPoolGlobalStats.CurrentBlockId + " difficulty: " + ClassMiningPoolGlobalStats.CurrentBlockDifficulty + " hash: " + ClassMiningPoolGlobalStats.CurrentBlockHash, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleBlueLog, true);
+                                    ClassLog.ConsoleWriteLog("Renewed block to mining id: " + ClassMiningPoolGlobalStats.CurrentBlockId + " difficulty: " + ClassMiningPoolGlobalStats.CurrentBlockDifficulty + " hash: " + ClassMiningPoolGlobalStats.CurrentBlockHash, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleBlueLog, true);
                                     ClassLog.ConsoleWriteLog("Current Mining Method: " + ClassMiningPoolGlobalStats.CurrentBlockMethod + " = AES ROUND: " + ClassMiningPoolGlobalStats.CurrentRoundAesRound + " AES SIZE: " + ClassMiningPoolGlobalStats.CurrentRoundAesSize + " AES BYTE KEY: " + ClassMiningPoolGlobalStats.CurrentRoundAesKey + " XOR KEY: " + ClassMiningPoolGlobalStats.CurrentRoundXorKey, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleBlueLog, true);
-                                }
-                                else
-                                {
-                                    if (splitBlockContent[1].Replace("HASH=", "") != ClassMiningPoolGlobalStats.CurrentBlockHash)
-                                    {
-                                        ClassMiningPoolGlobalStats.CurrentBlockId = splitBlockContent[0].Replace("ID=", "");
-                                        ClassMiningPoolGlobalStats.CurrentBlockHash = splitBlockContent[1].Replace("HASH=", "");
-                                        ClassMiningPoolGlobalStats.CurrentBlockAlgorithm = splitBlockContent[2].Replace("ALGORITHM=", "");
-                                        ClassMiningPoolGlobalStats.CurrentBlockSize = splitBlockContent[3].Replace("SIZE=", "");
-                                        ClassMiningPoolGlobalStats.CurrentBlockMethod = splitBlockContent[4].Replace("METHOD=", "");
-                                        ClassMiningPoolGlobalStats.CurrentBlockKey = splitBlockContent[5].Replace("KEY=", "");
-                                        ClassMiningPoolGlobalStats.CurrentBlockJob = splitBlockContent[6].Replace("JOB=", "");
-                                        ClassMiningPoolGlobalStats.CurrentBlockJobMinRange = decimal.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[0]);
-                                        ClassMiningPoolGlobalStats.CurrentBlockJobMaxRange = decimal.Parse(ClassMiningPoolGlobalStats.CurrentBlockJob.Split(new[] { ";" }, StringSplitOptions.None)[1]);
-                                        ClassMiningPoolGlobalStats.CurrentBlockReward = splitBlockContent[7].Replace("REWARD=", "");
-                                        ClassMiningPoolGlobalStats.CurrentBlockDifficulty = splitBlockContent[8].Replace("DIFFICULTY=", "");
-                                        ClassMiningPoolGlobalStats.CurrentBlockTimestampCreate = splitBlockContent[9].Replace("TIMESTAMP=", "");
-                                        ClassMiningPoolGlobalStats.CurrentBlockIndication = splitBlockContent[10].Replace("INDICATION=", "");
-                                        ClassMiningPoolGlobalStats.CurrentBlockTemplate = packetSplit[1];
-
-                                        int idMethod = 0;
-                                        if (ListOfMiningMethodName.Count > 0)
-                                        {
-                                            for (int i = 0; i < ListOfMiningMethodName.Count; i++)
-                                            {
-                                                if (i < ListOfMiningMethodName.Count)
-                                                {
-                                                    if (ListOfMiningMethodName[i] == ClassMiningPoolGlobalStats.CurrentBlockMethod)
-                                                    {
-                                                        idMethod = i;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        var splitMethod = ListOfMiningMethodContent[idMethod].Split(new[] { "#" }, StringSplitOptions.None);
-                                        ClassMiningPoolGlobalStats.CurrentRoundAesRound = int.Parse(splitMethod[0]);
-                                        ClassMiningPoolGlobalStats.CurrentRoundAesSize = int.Parse(splitMethod[1]);
-                                        ClassMiningPoolGlobalStats.CurrentRoundAesKey = splitMethod[2];
-                                        ClassMiningPoolGlobalStats.CurrentRoundXorKey = int.Parse(splitMethod[3]);
-                                        if (ClassMinerStats.DictionaryMinerStats.Count > 0)
-                                        {
-                                            await Task.Factory.StartNew(() =>
-                                            {
-                                                foreach (var miner in ClassMinerStats.DictionaryMinerStats)
-                                                {
-                                                    if (miner.Value.ListOfMinerTcpObject.Count > 0)
-                                                    {
-                                                        for (int i = 0; i < miner.Value.ListOfMinerTcpObject.Count; i++)
-                                                        {
-                                                            if (i < miner.Value.ListOfMinerTcpObject.Count)
-                                                            {
-                                                                if (miner.Value.ListOfMinerTcpObject[i] != null)
-                                                                {
-                                                                    if (miner.Value.ListOfMinerTcpObject[i].IsLogged)
-                                                                    {
-                                                                        miner.Value.ListOfMinerTcpObject[i].MiningPoolSendJobAsync(miner.Value.ListOfMinerTcpObject[i].CurrentMiningJobDifficulty);
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Current).ConfigureAwait(false);
-                                        }
-                                        ClassLog.ConsoleWriteLog("Renewed block to mining id: " + ClassMiningPoolGlobalStats.CurrentBlockId + " difficulty: " + ClassMiningPoolGlobalStats.CurrentBlockDifficulty + " hash: " + ClassMiningPoolGlobalStats.CurrentBlockHash, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleBlueLog, true);
-                                        ClassLog.ConsoleWriteLog("Current Mining Method: " + ClassMiningPoolGlobalStats.CurrentBlockMethod + " = AES ROUND: " + ClassMiningPoolGlobalStats.CurrentRoundAesRound + " AES SIZE: " + ClassMiningPoolGlobalStats.CurrentRoundAesSize + " AES BYTE KEY: " + ClassMiningPoolGlobalStats.CurrentRoundAesKey + " XOR KEY: " + ClassMiningPoolGlobalStats.CurrentRoundXorKey, ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleBlueLog, true);
-                                    }
                                 }
                             }
                         }
-                        break;
-                    case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendJobStatus:
-                        switch (packetSplit[1])
-                        {
-                            case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareUnlock:
-                                ClassLog.ConsoleWriteLog("Block ID: " + packetSplit[2] + " has been successfully found and accepted by Blockchain !", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
-                                ClassMiningPoolGlobalStats.ListBlockFound.Add(ClassMiningPoolGlobalStats.ListBlockFound.Count, int.Parse(packetSplit[2]) + "|" + ClassUtility.GetCurrentDateInSecond());
-                                await Task.Factory.StartNew(() => ClassPayment.ProceedMiningScoreRewardAsync(packetSplit[2]), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Current).ConfigureAwait(false);
-                                break;
-                            case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareBad:
-                                ClassLog.ConsoleWriteLog("Block ID: " + packetSplit[2] + " has been found by someone else before the pool or the share sent is invalid.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
-                                break;
-                            case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareAleady:
-                                ClassLog.ConsoleWriteLog("Block ID: " + packetSplit[2] + " is already found by someone else.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
-                                break;
-                        }
-                        break;
-
-                }
-            }
-            catch
-            {
+                    }
+                    break;
+                case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.SendJobStatus:
+                    switch (packetSplit[1])
+                    {
+                        case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareUnlock:
+                            ClassLog.ConsoleWriteLog("Block ID: " + packetSplit[2] + " has been successfully found and accepted by Blockchain !", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleGreenLog, true);
+                            ClassMiningPoolGlobalStats.ListBlockFound.Add(ClassMiningPoolGlobalStats.ListBlockFound.Count, int.Parse(packetSplit[2]) + "|" + ClassUtility.GetCurrentDateInSecond());
+                            await Task.Factory.StartNew(() => ClassPayment.ProceedMiningScoreRewardAsync(packetSplit[2]), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Current).ConfigureAwait(false);
+                            break;
+                        case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareBad:
+                            ClassLog.ConsoleWriteLog("Block ID: " + packetSplit[2] + " has been found by someone else before the pool or the share sent is invalid.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                            break;
+                        case ClassSoloMiningPacketEnumeration.SoloMiningRecvPacketEnumeration.ShareAleady:
+                            ClassLog.ConsoleWriteLog("Block ID: " + packetSplit[2] + " is already found by someone else.", ClassLogEnumeration.IndexPoolGeneralLog, ClassLogConsoleEnumeration.IndexPoolConsoleRedLog, true);
+                            break;
+                    }
+                    break;
 
             }
+
         }
 
         #endregion
@@ -547,64 +463,38 @@ namespace Xiropht_Mining_Pool.Network
         #region Send packet functions
 
         /// <summary>
-        /// Login pool to the network.
+        /// Method for ask and update mining methods.
         /// </summary>
-        private static async Task<bool> LoginConnection()
+        private static void AskMiningMethod()
         {
-            if (!await SendPacketToNetworkBlockchain(Program.Certificate, false))
+            if (ThreadAskMiningMethod != null && (ThreadAskMiningMethod.IsAlive || ThreadAskMiningMethod != null))
             {
-                IsConnected = false;
-                return false;
+                ThreadAskMiningMethod.Abort();
+                GC.SuppressFinalize(ThreadAskMiningMethod);
             }
-            if (!await SendPacketToNetworkBlockchain(ClassConnectorSettingEnumeration.MinerLoginType + "|" + MiningPoolSetting.MiningPoolWalletAddress, true))
+            ThreadAskMiningMethod = new Thread(async delegate ()
             {
-                IsConnected = false;
-                return false;
-            }
-            return true;
+                while (IsConnected)
+                {
+                    if (!await classSeedNodeConnector.SendPacketToSeedNodeAsync(ClassSoloMiningPacketEnumeration.SoloMiningSendPacketEnumeration.ReceiveAskListBlockMethod, Program.Certificate, false, true).ConfigureAwait(false))
+                    {
+                        IsConnected = false;
+                        break;
+                    }
+
+                    Thread.Sleep(1000);
+
+                    if (!await classSeedNodeConnector.SendPacketToSeedNodeAsync(ClassSoloMiningPacketEnumeration.SoloMiningSendPacketEnumeration.ReceiveAskCurrentBlockMining, Program.Certificate, false, true).ConfigureAwait(false))
+                    {
+                        IsConnected = false;
+                        break;
+                    }
+                    Thread.Sleep(1000);
+                }
+            });
+            ThreadAskMiningMethod.Start();
         }
 
-        /// <summary>
-        /// Ask current mining elements, current blocktemplate and current mining method.
-        /// </summary>
-        private static void AskMiningElementsConnectionAsync()
-        {
-            ThreadAskBlocktemplate = new Thread(async delegate ()
-            {
-                try
-                {
-                    while (IsConnected && ClassSeedNodeConnector.ReturnStatus() && !Program.Exit)
-                    {
-                        if (!await SendPacketToNetworkBlockchain(ClassSoloMiningPacketEnumeration.SoloMiningSendPacketEnumeration.ReceiveAskListBlockMethod, true))
-                        {
-                            IsConnected = false;
-                            break;
-                        }
-                        while (ListOfMiningMethodContent.Count == 0)
-                        {
-                            if (!IsConnected)
-                            {
-                                break;
-                            }
-                           Thread.Sleep(100);
-                        }
-                        Thread.Sleep(1000);
-                        if (!await SendPacketToNetworkBlockchain(ClassSoloMiningPacketEnumeration.SoloMiningSendPacketEnumeration.ReceiveAskCurrentBlockMining, true))
-                        {
-                            IsConnected = false;
-                            break;
-                        }
-                        Thread.Sleep(1000);
-                    }
-                }
-                catch
-                {
-                    IsConnected = false;
-                }
-                IsConnected = false;
-            });
-            ThreadAskBlocktemplate.Start();
-        }
 
         /// <summary>
         /// Send packet to the network of blockchain.
@@ -615,7 +505,7 @@ namespace Xiropht_Mining_Pool.Network
         {
             if (!encrypted)
             {
-                if (!await ClassSeedNodeConnector.SendPacketToSeedNodeAsync(packet, string.Empty, false, false))
+                if (!await classSeedNodeConnector.SendPacketToSeedNodeAsync(packet, string.Empty, false, false))
                 {
                     IsConnected = false;
                     return false;
@@ -623,7 +513,7 @@ namespace Xiropht_Mining_Pool.Network
             }
             else
             {
-                if (!await ClassSeedNodeConnector.SendPacketToSeedNodeAsync(packet, Program.Certificate, false, true))
+                if (!await classSeedNodeConnector.SendPacketToSeedNodeAsync(packet, Program.Certificate, false, true))
                 {
                     IsConnected = false;
                     return false;
@@ -644,7 +534,7 @@ namespace Xiropht_Mining_Pool.Network
             {
 
                 string request = ClassConnectorSettingEnumeration.WalletTokenType + "|" + ClassRpcWalletCommand.TokenCheckWalletAddressExist+"|"+walletAddress;
-                string result = await ClassRemoteApi.ProceedHttpRequest("http://" + ClassSeedNodeConnector.ReturnCurrentSeedNodeHost() + ":" + ClassConnectorSetting.SeedNodeTokenPort + "/", request);
+                string result = await ClassRemoteApi.ProceedHttpRequest("http://" + classSeedNodeConnector.ReturnCurrentSeedNodeHost() + ":" + ClassConnectorSetting.SeedNodeTokenPort + "/", request);
                 if (result == string.Empty || result == ClassApiEnumeration.PacketNotExist)
                 {
                     return false;
